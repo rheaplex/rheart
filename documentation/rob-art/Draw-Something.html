@@ -1,0 +1,71 @@
+<html lang="en">
+<head>
+<title>rheart documentation</title>
+<meta http-equiv="Content-Type" content="text/html">
+<meta name="description" content="rheart documentation">
+<meta name="generator" content="makeinfo 4.6">
+<!--
+This is the documentation for rheart.
+
+   <p>Copyright &copy; 2004 Rhea Myers.
+
+   <p>Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved-->
+<meta http-equiv="Content-Style-Type" content="text/css">
+<style type="text/css"><!--
+  pre.display { font-family:inherit }
+  pre.format  { font-family:inherit }
+  pre.smalldisplay { font-family:inherit; font-size:smaller }
+  pre.smallformat  { font-family:inherit; font-size:smaller }
+  pre.smallexample { font-size:smaller }
+  pre.smalllisp    { font-size:smaller }
+--></style>
+</head>
+<body>
+<div class="node">
+<p>
+Node:&nbsp;<a name="Draw%20Something">Draw Something</a>,
+Next:&nbsp;<a rel="next" accesskey="n" href="Concept-Index.html#Concept%20Index">Concept Index</a>,
+Previous:&nbsp;<a rel="previous" accesskey="p" href="ae.html#ae">ae</a>,
+Up:&nbsp;<a rel="up" accesskey="u" href="index.html#Top">Top</a>
+<hr><br>
+</div>
+
+<h2 class="chapter">Draw Something</h2>
+
+<p>Draw Something generates simple line drawings. It does this by generating a set or random points, finding their convex hull (smallest enclosing shape), and drawing around that. These stages are a very simple analogue to observational or constructive drawing.
+
+<h3 class="section">Precedents</h3>
+
+<p>I was inspired to start on draw-something (and rheart as a whole) by Harold Cohen's program AARON. Ed Burton's ROSE and Kazushi Mukaiyuma's Shizuka, both also inspired by AARON, were influences as well.
+
+<h3 class="section">Running Draw Something</h3>
+
+<p>To run ae, change to the directory rheart/draw-something and run the file run.lisp there.<br>
+<pre class="example">     $ cd draw-something
+     $ openmcl --load run.lisp
+     </pre>
+
+   <p>Draw Something will print messages describing its progress then write the files debug.ps and image.ps in its directory. image.ps is the finished drawing.
+
+   <p>You can open both files with a PostScript viewer such as GhostView, MacOSX Preview can also open PostScript files.
+
+<h3 class="section">A Sample Session</h3>
+
+<pre class="example">     cd draw-something
+     openmcl --load run.lisp
+     Drawing something.
+     Generating skeleton.
+     Finished generating skeleton.
+     Generating convex hull.
+     Finished generating convex hull.
+     Drawing around convex hull.
+     </pre>
+
+<h3 class="section">Sample Image Output</h3>
+
+<img src="draw-something.jpg" alt="draw-something.jpg">
+
+   </body></html>
+

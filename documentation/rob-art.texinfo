@@ -1,0 +1,197 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename rheart.info
+@settitle rheart documentation
+@c %**end of header
+ 
+@c TODO:
+@c Format up more thoroughly
+@c Finish index
+@c Prrofread & de-awkward
+@c Proper citations
+
+@copying
+This is the documentation for rheart.
+ 
+Copyright @copyright{} 2004 Rhea Myers.
+
+Copying and distribution of this file, with or without modification,
+are permitted in any medium without royalty provided the copyright
+notice and this notice are preserved
+@end copying
+ 
+@titlepage
+@title rheart
+@subtitle generative art & aesthetics programs
+@image{draw-something,12cm,12cm}
+@author Rhea Myers (@email{rhea@myers.studio})
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+ 
+@c Output the table of the contents at the beginning.
+@contents
+ 
+@ifnottex
+@node Top
+@top rheart
+ 
+@insertcopying
+@end ifnottex
+
+@c The Index
+@menu
+* Introduction::        An introduction to rheart.
+* The Cybernetic Artwork Nobody Wrote:: A program to generate descriptions of
+                                        abstract art images.
+* ae::                  A toy aesthetic evaluator.
+* Draw Something::      A simple drawing generator.
+* Concept Index::       Complete index.
+@end menu
+  
+@c The Introduction
+@node Introduction
+@chapter Introduction
+@cindex rheart
+rheart is a series of programs written in the course of developing a system to generate artistic images. 
+
+@section Implementation Notes
+@cindex Lisp
+@cindex OpenMCL
+@cindex SBCL
+@cindex implementation 
+The programs are written in the programming language Lisp, and should run on any ANSI Common Lisp system. OpenMCL and SBCL are particularly recommended. 
+
+@section Running The Programs
+@cindex run.lisp
+@cindex running the programs
+To run one of the programs, change to its directory and run the file run.lisp in that directory.@*
+For example:
+@example
+$ cd draw-something
+$ openmcl --load run.lisp
+@end example
+@noindent
+In example code (such as above), the dollar sign ($) indicates the command-line prompt. It should not be typed.
+
+@c The Cybernetic Artwork Nobody Wrote
+@node The Cybernetic Artwork Nobody Wrote
+@chapter The Cybernetic Artwork Nobody Wrote
+@cindex Harold Hurrell
+@cindex The Cybernetic Artwork that Nobody Broke
+@cindex poetry generators
+``Cybernetic'' generates random descriptions of possible abstract images. It is based on the poetry generation programs so beloved of basic computing texts, but generates descriptions of images rather than limericks. I think someone will probably have written such a program sometime in the 1960s, so the name refers to the conceptual artwork ``The Cybernetic Artwork that Nobody Broke'' by Harold Hurrell (1969). 
+
+@section Running Cybernetic...
+@cindex run.lisp
+@cindex running Cybernetic...
+To run ``Cybernetic'', change to the directory rheart/cybernetic/ and run the file run.lisp there.
+@example
+$ cd cybernetic
+$ openmcl --load run.lisp
+@end example
+@c @noindent
+@c ``Cybernetic'' can take an optional @command{--count} parameter to specify how many descriptions it should generate. The default is 10.
+@c @example
+@c $ cd cybernetic
+@c $ openmcl --load run.lisp --count 20
+@c @end example
+
+@section Sample Session
+@example
+$ cd cybernetic
+$ openmcl --load run.lisp
+A large smooth pale pink outlined organic shape on a halftoned rich 
+cotton-coloured ground.
+A tiny bright sky blue abstracted bird on a pale sea green ground.
+A pair of massive halftoned pale non-repro blue outlined octagons on a 
+crosshatched rich platinum ground.
+Many massive pale suede-coloured birds on a scumbled white ground.
+A small brown horse on a pale cotton-coloured ground.
+Some sunset red spiky shapes on a halftoned denim blue ground.
+A large green spiky shape on a black ground.
+A pair of small bright black pentagons on a pale pink ground.
+A pair of rich purple outlined ships on a scumbled cyan ground.
+Many massive crosshatched bright shocking pink irregular shapes on a smooth 
+rich leaf green ground.
+@end example
+
+@c ae
+@node ae
+@chapter ae
+@cindex aesthetics
+@cindex aesthetic
+@cindex criteria
+@cindex aesthetic value
+@cindex aesthetic property
+ae is a toy aesthetic evaluator. It generates simple descriptions of aesthetics, basically just a list of valenced criteria. It also generates descriptions of artworks consisting of a number of figures, each described by a list of valenced properties. It then evaluates artwork against aesthetic and gives the artwork a numeric score, a measure of its value under that aesthetic.
+
+@section Precedents
+I wrote ae before I'd read Gips and Stiny's ``Algorithmic Aesthetics'' (University of California Press, 1979 - @uref{http://www.algorithmicaesthetics.org/}), but I was certainly inspired by the idea of the possibility of an algorithmic aesthetics.
+
+The structure of ae's ontology, with specific concepts generalisable to more broader concepts, is inspired by Douglas Hofstadter and Melanie Mitchell's work on CopyCat, described in the book ``Fluid Concepts and Creative Analogies''.
+
+@section Running ae
+@cindex run.lisp
+@cindex running ae
+To run ae, change to the directory rheart/ae and run the file run.lisp there.
+@example
+$ cd ae
+$ openmcl --load run.lisp
+@end example
+
+@c Draw Something
+@node Draw Something
+@chapter Draw Something
+@cindex convex hull
+@cindex drawing
+Draw Something generates simple line drawings. It does this by generating a set or random points, finding their convex hull (smallest enclosing shape), and drawing around that. These stages are a very simple analogue to observational or constructive drawing.
+
+@section Precedents
+I was inspired to start on draw-something (and rheart as a whole) by Harold Cohen's program AARON. Ed Burton's ROSE and Kazushi Mukaiyuma's Shizuka, both also inspired by AARON, were influences as well.
+
+@section Running Draw Something
+@cindex run.lisp
+@cindex running draw something
+To run ae, change to the directory rheart/draw-something and run the file run.lisp there.@*
+@example
+$ cd draw-something
+$ openmcl --load run.lisp
+@end example
+@c @noindent
+@c Draw Something can take an optional @command{--draw} parameter to specify whether it should draw around the random lines (@command{--draw skeleton}) or around the convex hull (@command{--draw hull}). The default is @command{hull}.
+@c @example
+@c $ cd draw-something
+@c $ openmcl --load run.lisp --draw skeleton
+@c @end example
+
+Draw Something will print messages describing its progress then write the files debug.ps and image.ps in its directory. image.ps is the finished drawing. 
+
+@cindex GhostScript
+@cindex PostScript
+You can open both files with a PostScript viewer such as GhostView, MacOSX Preview can also open PostScript files.
+
+@section A Sample Session
+@example
+cd draw-something
+openmcl --load run.lisp
+Drawing something.
+Generating skeleton.
+Finished generating skeleton.
+Generating convex hull.
+Finished generating convex hull.
+Drawing around convex hull.
+@end example
+
+@section Sample Image Output
+@image{draw-something}
+
+@c Avoid name clash with html output index.html
+@node Concept Index
+@unnumbered Concept Index
+
+@printindex cp
+
+@bye
+ 
