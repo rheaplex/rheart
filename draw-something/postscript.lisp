@@ -15,6 +15,8 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+(in-package "DRAW-SOMETHING")
+
 (defvar *ps-stream* t)
 
 (defmethod write-eps-header (width height &key (to *ps-stream*))
@@ -30,13 +32,21 @@
   "Set the PostScript RGB colour value."
   (format to "~F ~F ~F setrgbcolor~%" r g b))
 
+(defmethod write-fill (&key (to *ps-stream*))
+  "Write the fill operator."
+  (format to "fill~%"))
+
 (defmethod write-close-path (&key (to *ps-stream*))
   "Close the current PostScript path by drawing a line between its endpoints."
   (format to "closepath~%"))
 
-(defmethod write-stroke-path (&key (to *ps-stream*))
+(defmethod write-stroke (&key (to *ps-stream*))
   "Stroke the current PostScript path."
   (format to "stroke~%"))
+
+(defmethod write-fill (&key (to *ps-stream*))
+  "Fill the current PostScript path."
+  (format to "fill~%"))
 
 (defmethod write-new-path (&key (to *ps-stream*))
   "Start a new PostScript path."
@@ -52,13 +62,18 @@
 
 (defmethod write-subpath (points &key (to *ps-stream*))
   "Write a subpath of a PostScript path."
-  (write-moveto (x (car points)) 
-		(y (car points))
+  (write-moveto (x (aref points 0)) 
+		(y (aref points 0))
 		:to to)
-  (dolist (p (cdr points))
-    (write-lineto (x p) 
-		  (y p) 
+  (do ((i 1 (+ i 1))) 
+      ((= i (length points)))
+    (write-lineto (x (aref points i)) 
+		  (y (aref points i)) 
 		  :to to)))
+
+(defmethod write-rectfill (x y w h &key (to *ps-stream*))
+  "Draw a rectangle with the given co-ordinates and dimensions."
+  (format to "~F ~F ~F ~F rectfill~%" x y w h))
 
 
 

@@ -1,5 +1,5 @@
-;;  run.lisp -  A toy aesthetics description and evaluation system
-;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
+;;  package.lisp - The main package for draw-something
+;;  Copyright (C) 2005 Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -15,7 +15,11 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(load "draw-something.asd")
-(load-draw-something)
-(draw-something:run)  
+(in-package "CL-USER")
 
+(eval-when (:COMPILE-TOPLEVEL :LOAD-TOPLEVEL :EXECUTE)
+  (defpackage DRAW-SOMETHING
+	(:documentation
+	 "The draw-something package.")
+	(:use common-lisp)
+	(:export run)))

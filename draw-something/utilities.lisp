@@ -1,4 +1,4 @@
-;;  run.lisp -  A toy aesthetics description and evaluation system
+;;  utilities.lisp - Various utilities.
 ;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
@@ -15,7 +15,11 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(load "draw-something.asd")
-(load-draw-something)
-(draw-something:run)  
+(in-package "DRAW-SOMETHING")
 
+(defmethod debug-message (msg)
+  "Write the message to the error stream, not to standard output."
+  (format *debug-io* 
+	  "~A~%" 
+	  msg)
+  (finish-output *debug-io*))
