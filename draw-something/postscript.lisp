@@ -42,17 +42,23 @@
   "Start a new PostScript path."
   (format to "newpath~%"))
 
+(defmethod write-moveto (x y &key (to *ps-stream*))
+  "Move the PostScript pen to the given co-ordinates"
+  (format to "~F ~F moveto~%" x y))
+
+(defmethod write-lineto (x y &key (to *ps-stream*))
+  "Draw a line with the PostScript pen to the given co-ordinates"
+  (format to "~F ~F lineto~%" x y))
+
 (defmethod write-subpath (points &key (to *ps-stream*))
   "Write a subpath of a PostScript path."
-  (format to 
-	  "~F ~F moveto~%" 
-	  (x (car points)) 
-	  (y (car points)))
+  (write-moveto (x (car points)) 
+		(y (car points))
+		:to to)
   (dolist (p (cdr points))
-    (format to 
-	    "~F ~F lineto~%" 
-	    (x p) 
-	    (y p))))
+    (write-lineto (x p) 
+		  (y p) 
+		  :to to)))
 
 
 

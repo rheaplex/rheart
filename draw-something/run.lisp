@@ -20,15 +20,15 @@
 (load "../library/utilities.lisp")
 (load "../library/clopt.lisp")
 
-(load "./geometry.lisp")
-(load "./postscript.lisp")
-(load "./drawing.lisp")
+(load "geometry.lisp")
+(load "postscript.lisp")
+(load "drawing.lisp")
 
 
 (defmethod maybe-help ()
   "Check the command line for the --help flag and act accordingly."
   (when (get-arg "help")
-    (format t "Draw Something~%Rhea Myers (C) 2004~%usage: <lisp> run.lisp <options> where option is:~%    -d, --draw : the shape to draw around, skeleton or hull (default: hull)~%~%")
+    (format t "Draw Something~%Rhea Myers (C) 2005~%usage: <lisp> run.lisp <options> where option is:~%    -d, --draw : the shape to draw around, skeleton or hull (default: hull)~%~%")
     (quit)))
 
 (defmethod run ()
@@ -39,59 +39,85 @@
 			     :default "hull")))
     (draw-something (equal what "hull"))))
 
-(defmethod draw-something (draw-hull &key (name "./drawing.eps"))
-  "The main method that generates the drawing and writes it to file."
-  (debug-message "Drawing something.")
-  ;; Set the random number generator seed to a random value
-  (setf *random-state* (make-random-state t))
+(defmethod write-debug-image (skeleton)
+  "Write the debugging image."
+  (with-open-file (ps "./debug.eps" 
+		      :direction :output
+		      :if-exists :supersede)
+    (write-eps-header 420 420 :to ps)
+    (write-rgb 0.4 0.4 1.0 :to ps)
+    (write-new-path :to ps)
+    (write-subpath (points skeleton) :to ps)
+    ;; (write-close-path)
+    (write-stroke-path :to ps)
+    ;; Write the first segment
+    (write-rgb 1.0 0.0 0.0 :to ps)
+    (write-new-path :to ps)
+    (write-subpath (list (car (points skeleton)) 
+			 (cadr (points skeleton))) :to ps)
+    (write-stroke-path :to ps)
+    (write-eps-footer :to ps)))
+
+(defmethod write-drawing (name drawing)
+  "Write the drawing"
+  (debug-message "Writing drawing to file.")
+  (with-open-file (ps name 
+		      :direction :output
+		      :if-exists :supersede)
+    (write-eps-header 420 420 :to ps)
+    (write-rgb 0.1 0.1 0.1 :to ps)
+    (write-new-path :to ps)
+    (write-subpath drawing :to ps)
+    (write-stroke-path :to ps)
+    (write-eps-footer :to ps))
+  (debug-message "Finished writing drawing to file."))
+
+(defmethod draw-around-skeleton (draw-hull skeleton)
+  "Actually draw arounf the guide shape"
+  (let ((the-pen (make-instance 'pen :distance 5.0 :speed 2.0)))
+    (if draw-hull
+	(debug-message "Drawing around convex hull.")
+	(debug-message "Drawing around skeleton."))
+    (let ((drawing (draw-around skeleton the-pen)))
+      (if draw-hull
+	  (debug-message "Finished drawing around convex hull.")
+	  (debug-message "Finished drawing around skeleton."))
+      drawing)))
+
+(defmethod generate-polyline ()
+  "Generate the skeleton"
   (debug-message "Generating skeleton.")
   (let* ((rect (make-instance 'rectangle
 			      :x 10.0 :y 10.0 :width 400 :height 400))
 	 (skeleton (random-points-in-rectangle rect 10)))
     (debug-message "Finished generating skeleton.")
-    (when draw-hull
-      (debug-message "Generating convex hull.")
-      (setf skeleton (convex-hull skeleton))
-      (debug-message "Finished generating convex hull."))
-  ;; Write the debugging image
-  (with-open-file (ps "./debug.eps" 
-		      :direction :output
-		      :if-exists :supersede)
-		  (write-eps-header 420 420 :to ps)
-		  (write-rgb 0.4 0.4 1.0 :to ps)
-		  (write-new-path :to ps)
-		  (write-subpath (points skeleton) :to ps)
-		  ;; (write-close-path)
-		  (write-stroke-path :to ps)
-		  ;; Write the first segment
-		  (write-rgb 1.0 0.0 0.0 :to ps)
-		  (write-new-path :to ps)
-		  (write-subpath (list (car (points skeleton)) 
-				       (cadr (points skeleton))) :to ps)
-		  (write-stroke-path :to ps)
-		  (write-eps-footer :to ps))
-      (let ((the-hand (make-instance 'hand :distance 5.0 :speed 5.0)))
-	(if draw-hull
-	    (debug-message "Drawing around convex hull.")
-	  (debug-message "Drawing around skeleton."))
-	(let ((drawing (draw-around skeleton the-hand)))
-	  (if draw-hull
-	      (debug-message "Finished drawing around convex hull.")
-	    (debug-message "Finished drawing around skeleton."))
-	  ;; Write the drawing
-	  (debug-message "Writing drawing to file.")
-	  (with-open-file (ps name 
-			      :direction :output
-			      :if-exists :supersede)
-			  (write-eps-header 420 420 :to ps)
-			  (write-rgb 0.1 0.1 0.1 :to ps)
-			  (write-new-path :to ps)
-			  (write-subpath drawing :to ps)
-			  (write-stroke-path :to ps)
-			  (write-eps-footer :to ps))
-	  (debug-message "Finished writing drawing to file.")
-	  (debug-message "Finished drawing something.")
-	  (quit)))))
+    (make-instance 'polyline 
+		   :points skeleton)))
+
+(defmethod generate-hull (skeleton)
+  "Make the convex hull for the skeleton."
+  (debug-message "Generating convex hull.")
+  (let ((hull (convex-hull skeleton)))
+    (debug-message "Finished generating convex hull.")
+    hull))
+
+(defmethod generate-skeleton (draw-hull)
+  (let ((skeleton (generate-polyline)))
+    (if draw-hull
+	(generate-hull (points skeleton))
+	skeleton)))
+
+(defmethod draw-something (draw-hull &key (name "./drawing.eps"))
+  "The main method that generates the drawing and writes it to file."
+  (debug-message "Drawing something.")
+  ;; Set the random number generator seed to a random value
+  (setf *random-state* (make-random-state t))
+  (let ((skeleton (generate-skeleton draw-hull)))
+    (write-debug-image skeleton)
+    (let ((drawing (draw-around-skeleton draw-hull skeleton)))
+      (write-drawing name drawing)))
+  (debug-message "Finished drawing something.")
+  (quit))
 
 ;; Run the tests
 (run-tests)

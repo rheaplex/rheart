@@ -24,9 +24,13 @@
 (defmacro until (test &rest body)
   "Execute the body until test evaluates to true."
   `(do ()
-       ((eq t ,test))
+       ((eq t 
+	    ,test))
      ,@body))
 
 (defmethod debug-message (msg)
   "Write the message to the error stream, not to standard output."
-  (format *debug-io* "~A~%" msg))
+  (format *debug-io* 
+	  "~A~%" 
+	  msg)
+  (finish-output *debug-io*))
