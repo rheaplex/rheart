@@ -22,4 +22,4 @@
 	(:documentation
 	 "The draw-something package.")
 	(:use common-lisp)
-	(:export run)))
+	(:export run generate-skeleton draw-something x y)))
