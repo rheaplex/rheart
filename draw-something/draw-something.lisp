@@ -77,7 +77,7 @@
 			      :width 400 
 			      :height 400))
 	 (skeleton (random-points-in-rectangle rect 
-					       28)))
+					       12)))
     (debug-message "Finished generating skeleton.")
     (make-instance 'polyline 
 		   :points skeleton)))

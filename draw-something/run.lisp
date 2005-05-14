@@ -19,3 +19,4 @@
 (load-draw-something)
 (draw-something:run)  
 
+(quit)
