@@ -1,0 +1,57 @@
+<html>
+<head>
+  <title>draw-something</title>
+  <style>
+    h1 {font-family: helvetica, arial, sans-serif; color: #AAAABB;}
+    p {font-family: helvetica, arial, sans-serif; font-size: 11pt; color: #111122;}
+  </style>
+</head>
+<body bgcolor='#FFFFFF' onLoad='window.document.drawsomething.focus();'>
+<h1>draw-something</h1>
+<table border='0' width='780px'>
+<tr>
+<td width='320px'>
+<p>draw-something is a program that generates original drawings. It does
+so by generating a simple random polyline scribble then drawing
+around that using a simple maze-running algorithm. This procedure was
+chosen as the simplest behaviour that models the creative process of
+drawing as either sketching or drafting. The program is written in
+Lisp, although it has been translated to ActionScript for the Flash
+version on this page.</p>
+<p>These choices were inspired by Harold Cohen's drawing program AARON.
+Its drawing behaviour and the choice of Lisp as implementation
+language were inspired by some versions of AARON. Although he has
+written essays describing AARON's algorithms Harold Cohen has not
+made AARON's code public. My desire to see AARON's code, or the code
+of an AARON-like system, motivated me to write draw-something and to
+make it Free Software.</p>
+<p>draw-something makes images in a different style from AARON and over
+time it will be extended to have more, and different, features. A
+current version does simple colour, and I am working on more complex
+guide shapes. I exhibited a screen-based version of draw-something at
+my show in Gallery o3one in Belgrade (alongside some prints from the
+colour version) and at dorkbot London in 2005.</p>
+<p>Press the 'a' key to toggle visibility of the skeleton that is being drawn around.</p>
+<p><a href='./draw-something.html' 
+      onclick='window.open("./draw-something.html","draw-something","width=600,height=600,location=0,status=0,scrollbars=0,resizable=0"); return false'>Launch draw-something in a new window.</a><br />&nbsp;<br />
+<a href='http://rheart.sourceforge.net'>Project homepage.</a><br />&nbsp;<br />
+<a href='./draw-something-flash.zip'>Download the source</a></p>
+</td>
+<td width="20px">&nbsp;</td>
+<td valign='top' align='right' width="340px">
+  <div style="border: 1px solid gray;">
+    <object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0" width="340" height="340" id="myothermovie">
+      <param name="movie" value="draw_something.swf">
+      <param name="SeamlessTabbing" value="false">
+      <param name="swLiveConnect" value="true">
+      <param name="quality" value="high">
+      <embed src="draw_something.swf" width="340" height="340" 
+	     NAME='drawsomething'>
+      </embed>
+    </object>
+  </div>
+</td>
+</tr>
+</table>
+</body>
+</html>
