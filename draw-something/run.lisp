@@ -1,4 +1,4 @@
-;;  run.lisp -  A toy aesthetics description and evaluation system
+;;  run.lisp - Load the asdf system and make a drawing
 ;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
@@ -16,7 +16,7 @@
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 (load "draw-something.asd")
-(load-draw-something)
+(asdf:operate 'asdf:load-op :draw-something)
 (draw-something:run)  
 
 (quit)

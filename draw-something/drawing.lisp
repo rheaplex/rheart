@@ -17,174 +17,121 @@
 
 (in-package "DRAW-SOMETHING")
 
-(defclass pen-state ()
-  ((location :accessor location 
-	     :initform (make-instance 'point) 
-	     :initarg :location
-	     :documentation "The current location of the pen.")
-  (direction :accessor direction
-	     :initform 0.0 
-	     :initarg :direction
-	     :documentation "The current heading of the pen, in radians anticlockwise.")
-  (pen-down :accessor pen-down 
-	    :initform t
-	    :initarg :pen-down
-	    :documentation "Whether the pen is in contact with the paper."))
-  (:documentation "The pen's current state."))
+(defconstant pen-distance 5.0)
+(defconstant pen-distance-tolerance 1.5)
+(defconstant pen-forward-step 2.0)
+(defconstant pen-turn-step 0.02)
 
-(defclass pen-configuration ()
-  ((speed :accessor speed
-	 :initform 1.0
-	 :initarg :speed
-	 :documentation "How far the pen moves each step.")
-  (pen-distance :accessor pen-distance
-		 :initform 2.0
-		 :initarg :distance
-		 :documentation "The distance the pen should be from the skeletal (quide) shape it is drawing around.")
-  (distance-fuzz :accessor distance-fuzz
-		 :initform 1.4
-		 :initarg :distance-fuzz
-		 :documentation "How far the pen can drift from the distance it should be from the skeletal (guide) shape.")
-  (turn-step :accessor turn-step 
-	     :initform 0.01
-	     :initarg :turn-step
-	     :documentation "How far the pen turns at a time."))
-  (:documentation "Constraints for a pen."))
+(defconstant drawing-step-limit 5000)
 
-(defclass pen (pen-state
-	       pen-configuration)
-  ()
-  (:documentation "A pen with state and configuration."))
+(defclass drawing ()
+  ((pen :accessor pen
+	:type turtle
+	:initarg :pen
+	:documentation "The pen drawing around the outline.")
+   (skeleton :accessor skeleton 
+	     :type polyline
+	     :initarg :skeleton
+	     :documentation "The guide shape for the outline.")
+   (outline :accessor outline
+	    :type polyline
+	    :initform (make-instance 'polyline)
+	    :documentation "The cached drawing outline."))
+   (:documentation "A drawing in progress."))
 
-(defmethod turn ((p pen) delta)
-  "Turn the pen anticlockwise the given amount in radians."
-  (setf (direction p) 
-	(+ (direction p) 
-	   delta)))
+(defmethod first-point ((the-drawing drawing))
+  "Get the first point in the outline of the drawing."
+  (aref (points (outline the-drawing))
+	0))
 
-(defmethod turn-left ((p pen) delta)
-  "Turn the pen left by the given amount in degrees,"
-  (turn p (- delta)))
+(defmethod point-count ((the-drawing drawing))
+  "The number of points in the outline of the drawing."
+  (length (points (outline the-drawing))))
 
-(defmethod turn-right ((p pen) delta)
-  "Turn the pen right by the given amount in degrees,"
-  (turn p delta))
+(defmethod most-recent-point ((the-drawing drawing))
+  "The most recent point added to the outline of the drawing."
+  (aref (points (outline the-drawing))
+	(- (point-count the-drawing) 
+	   1))) 
 
-(defmethod move-forward ((p pen) distance)
-  "Move the pen forward the given distance at the pen's current angle."
-  (setf (location p) 
-	(next-point p distance)))
-
-(defmethod move-backward ((p pen) distance)
-  "Move the pen backward the given distance at the pen's current angle."
-  (move-forward p (- distance)))
-
-(defmethod next-point-x ((p pen) distance)
-  "The x co-ordinate of the next point the pen would move forward to."
-  (+ (x (location p)) 
-     (* distance 
-	(sin (direction p)))))
-
-(defmethod next-point-y ((p pen) distance)
-  "The y co-ordinate of the next point the pen would move forward to."
-  (+ (y (location p)) 
-     (* distance 
-	(cos (direction p)))))
-
-(defmethod next-point ((p pen) distance)
-  "Calculate the next point the pen would move forward to, but don't move the pen to it."
+(defmethod make-drawing-start-point ((skeleton polyline))
+  "Get the point to start drawing at."
+  (let ((start-point (highest-leftmost-point skeleton)))
     (make-instance 'point 
-		   :x (next-point-x p distance)
-		   :y (next-point-y p distance)))
+		   :x (x start-point)
+		   :y (+ (y start-point) 
+			 pen-distance))))
 
-(defmethod path-ready-to-close (sketch (p pen) (first-point point))
+(defmethod make-drawing-pen ((skeleton polyline))
+  "Make the pen for the drawing."
+  (make-instance 'turtle 
+		 :location (make-drawing-start-point skeleton)
+		 :turn-step pen-turn-step
+		 :move-step pen-forward-step))
+
+(defmethod make-drawing (x y width height num-points)
+  "Make a drawing, ready to be started."
+  (let ((skel (make-random-polyline-in-bounds x y width height num-points)))
+    (let ((the-drawing (make-instance 'drawing
+				      :skeleton skel
+				      :pen (make-drawing-pen skel))))
+      (append-point (outline the-drawing) 
+		    (location (pen the-drawing)))
+      the-drawing)))
+
+(defmethod path-ready-to-close ((the-drawing drawing))
   "Would drawing the next section bring us close enough to the start of the path that we should close the path?"
-  (and (> (length sketch) 2)
-       (< (distance (aref sketch (- (length sketch) 
-				    1)) 
-		    first-point)
-	  (speed p))))
+  (and (> (point-count the-drawing) 2) ;; Ignore very first point
+       (< (distance (most-recent-point the-drawing)
+		    (first-point the-drawing))
+	  (move-step (pen the-drawing)))))
 
-(defmethod draw-around ((poly polyline) (p pen))
-  "Draw around a polygon using a pen."
-  (start-drawing poly p)
-  (let* ((first-point (location p))
-	 (sketch (make-array 1 
-			     :adjustable t
-			     :fill-pointer 1
-			     :initial-element first-point))
-	(guard-count 10000))
-    ;;Make the rest, finishing when < step from the original point
-    (loop until (or (path-ready-to-close sketch p first-point)
-    				(= guard-count
-    				    0))
-	  do (vector-push-extend (draw-step poly p) 
-				 sketch)
-	;; hack to protect against endless loop, remove when fixed
-	(setf guard-count
-	      (- guard-count
-	         1)))
-    (vector-push-extend first-point
-			sketch)
-    sketch))
+(defmethod path-timeout ((the-drawing drawing))
+  "Make sure that a failure of the drawing algorithm hasn't resulted in a loop."
+  (> (point-count the-drawing)
+     drawing-step-limit))
 
-(defmethod start-drawing ((poly polyline) (p pen))
-  "Start the drawing turtle just above the top left point of the polygon."
-  (let ((top-left (highest-leftmost-point (points poly))))
-    (setf (location p)
-	  (make-instance 'point 
-			 :x (x top-left) 
-			 :y (+ (y top-left)  
-			       (pen-distance p))))))
+(defmethod should-finish ((the-drawing drawing))
+  "Decide if the drawing should finish."
+  (or (path-ready-to-close the-drawing)
+      (path-timeout the-drawing)))
 
-(defmethod next-pen-distance ((poly polyline) (p pen))
+(defmethod next-pen-distance ((the-drawing drawing))
   "How far the pen will be from the guide shape when it next moves forwards."
-  (distance (next-point p (speed p)) 
-	    poly))
+  (distance (next-point (pen the-drawing)) 
+	    (skeleton the-drawing)))
 
-(defmethod next-pen-too-close ((poly polyline) (p pen))
+(defmethod next-pen-too-close ((the-drawing drawing))
   "Will the pen move to be too close from the guide shape next time?"
-;;  (< (next-pen-distance poly p) 
-;;     (pen-distance p)))
-  (< (random (distance-fuzz p))
-     (- (next-pen-distance poly p)
-	(pen-distance p))))
+  (< (random pen-distance-tolerance)
+     (- (next-pen-distance the-drawing)
+	pen-distance)))
 
-(defmethod next-pen-too-far ((poly polyline) (p pen))
+(defmethod next-pen-too-far ((the-drawing drawing ))
   "Will the pen move to be too far from the guide shape next time?"
-;  (> (next-pen-distance poly p) 
-;     (pen-distance p)))
-  (< (random (distance-fuzz p))
-     (- (pen-distance p)
-	(next-pen-distance poly p))))
+  (< (random pen-distance-tolerance)
+     (- pen-distance
+	(next-pen-distance the-drawing))))
      
-(defmethod ensure-next-pen-far-enough ((poly polyline) (p pen))
+(defmethod ensure-next-pen-far-enough ((the-drawing drawing))
   "If the pen would move too close next time, turn it left until it wouldn't."
-  (loop while (next-pen-too-close poly p)
-     do (turn-left p (turn-step p))))
+  (loop while (next-pen-too-close the-drawing)
+     do (left (pen the-drawing))))
      
-(defmethod ensure-next-pen-close-enough ((poly polyline) (p pen))
+(defmethod ensure-next-pen-close-enough ((the-drawing drawing))
   "If the pen would move too far next time, turn it right until it wouldn't."
-  (loop while (next-pen-too-far poly p)
-     do (turn-right p (turn-step p))))
+  (loop while (next-pen-too-far the-drawing)
+     do (right (pen the-drawing))))
     
-(defmethod adjust-next-pen ((poly polyline) (p pen))
+(defmethod adjust-next-pen ((the-drawing drawing))
   "Set the pen back on the correct path around the shape."
-    (ensure-next-pen-far-enough poly p)
-    (ensure-next-pen-close-enough poly p))
+  (ensure-next-pen-far-enough the-drawing)
+  (ensure-next-pen-close-enough the-drawing))
 
-(defmethod draw-step ((poly polyline) (p pen))
+(defmethod draw-step ((the-drawing drawing))
   "Find the next point forward along the drawn outline of the shape."
-  (adjust-next-pen poly p)
-  (move-forward p (speed p))
-  (location p))
-
-
-;(test
-; (let* ((a (make-instance 'point :x 0 :y 0))
-;	(b (make-instance 'point :x 0 :y 10))
-;	(c (make-instance 'point :x 10 :y 10))
-;	(d (make-instance 'point :x 10 :y 0))
-;	(hull (make-instance 'polyline :points (list d c b a)))
-;	(p (start-drawing hull (make-instance 'pen))))
-;   (draw-step hull p)))
+  (adjust-next-pen the-drawing)
+  (forward (pen the-drawing))
+  (append-point (outline the-drawing)
+		(location (pen the-drawing)))
+  (most-recent-point the-drawing))

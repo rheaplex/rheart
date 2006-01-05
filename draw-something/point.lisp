@@ -1,4 +1,4 @@
-;;  geometry.lisp - Basic geometry stuff.
+;;  point.lisp - A 2D point.
 ;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
@@ -17,12 +17,29 @@
 
 (in-package "DRAW-SOMETHING")
 
-(defconstant radian (* pi 2.0)
-  "One radian.")
+(defclass point ()
+  ((x :accessor x 
+      :initform  0.0
+      :initarg :x
+      :documentation "The x co-ordinate of the point.")
+   (y :accessor y
+      :initform 0.0
+      :initarg :y
+      :documentation "The y co-ordinate of the point."))
+  (:documentation "A simple cartesian point on the picture plane (or page). 
+                   y goes up"))
 
-(defconstant %radians-to-degrees (/ radian 360.0)
-  "The value to multiple radians by to get degrees.")
+(defmethod distance ((a point) (b point))
+  "The distance between two points"
+  (sqrt (+ (expt (- (x b)
+		    (x a))
+		 2)
+	   (expt (- (y b)
+		    (y a))
+		 2))))
 
-(defmethod radians-to-degrees (radians)
-  "Convert a value in radians to a huamn-readable value in degrees. :-)"
-  (/ radians %radians-to-degrees))
+(defmethod random-point-in-bounds (x y width height)
+  "Make a point placed randomly within the given bounds."
+  (make-instance 'point 
+		 :x (+ x (random width))
+		 :y (+ y (random height))))

@@ -17,99 +17,48 @@
 
 (in-package "DRAW-SOMETHING")
 
-(defmethod run ()
-  "Get the number of descriptions to generate and generate them."
-    (draw-something nil))
+(defconstant drawing-width 600)
+(defconstant drawing-height 600)
+(defconstant border (* pen-distance 2))
 
-(defmethod write-debug-image (skeleton)
-  "Write the debugging image."
-  (with-open-file (ps "./debug.eps" 
-		      :direction :output
-		      :if-exists :supersede)
-    (write-eps-header 420 420 :to ps)
-    (write-rgb 0.4 0.4 1.0 :to ps)
-    (write-new-path :to ps)
-    (write-subpath (points skeleton) :to ps)
-    ;; (write-close-path)
-    (write-stroke :to ps)
-    ;; Write the first segment
-    (write-rgb 1.0 0.0 0.0 :to ps)
-    (write-new-path :to ps)
-    (write-subpath (vector (aref (points skeleton) 0) 
-			   (aref (points skeleton) 1)) :to ps)
-    (write-stroke :to ps)
-    (write-eps-footer :to ps)))
+(defmethod write-skeleton ((d drawing) ps)
+  "Write the skeleton the drawing is made around."
+  (write-rgb 0.4 0.4 1.0 :to ps)
+  (write-new-path :to ps)
+  (write-subpath (points (skeleton d)) :to ps)
+  (write-stroke :to ps))
 
-(defmethod write-drawing (name drawing)
+(defmethod write-outline ((d drawing) ps)
+  "Write the drawing outline."
+    (write-rgb 0.0 0.0 0.0 :to ps)
+    (write-new-path :to ps)
+    (write-subpath (points (outline d)) :to ps)
+    (write-stroke :to ps))
+
+(defmethod write-drawing ((name string) (d drawing))
   "Write the drawing"
-  (debug-message "Writing drawing to file.")
   (with-open-file (ps name 
 		      :direction :output
 		      :if-exists :supersede)
-    (write-eps-header 420 420 :to ps)
-    (write-rgb (random 1.0) (random 1.0) (random 1.0) :to ps)
-    (write-rectfill 0 0 420 420 :to ps)
-    (write-rgb (random 1.0) (random 1.0) (random 1.0) :to ps)
-    (write-new-path :to ps)
-    (write-subpath drawing :to ps)
-    (write-fill :to ps)
-    (write-eps-footer :to ps))
-  (debug-message "Finished writing drawing to file."))
+    (write-eps-header drawing-width drawing-height :to ps)
+    ;;(write-skeleton d ps)
+    (write-outline d ps)
+    (write-eps-footer :to ps)))
 
-(defmethod draw-around-skeleton (draw-hull skeleton)
-  "Actually draw arounf the guide shape"
-  (let ((the-pen (make-instance 'pen :distance 5.0 :speed 2.0)))
-    (if draw-hull
-	(debug-message "Drawing around convex hull.")
-	(debug-message "Drawing around skeleton."))
-    (let ((drawing (draw-around skeleton the-pen)))
-      (if draw-hull
-	  (debug-message "Finished drawing around convex hull.")
-	  (debug-message "Finished drawing around skeleton."))
-      drawing)))
+(defmethod draw-something ()
+  "Make a drawing."
+  (let ((d (make-drawing border 
+			 border 
+			 (- drawing-width border) 
+			 (- drawing-height border) 
+			 12)))
+    (do () 
+	((should-finish d))
+      (draw-step d))
+    d))
 
-(defmethod generate-polyline ()
-  "Generate the skeleton"
-  (debug-message "Generating skeleton.")
-  (let* ((rect (make-instance 'rectangle
-			      :x 10.0 
-			      :y 10.0 
-			      :width 400 
-			      :height 400))
-	 (skeleton (random-points-in-rectangle rect 
-					       12)))
-    (debug-message "Finished generating skeleton.")
-    (make-instance 'polyline 
-		   :points skeleton)))
-
-(defmethod generate-hull (skeleton)
-  "Make the convex hull for the skeleton."
-  (debug-message "Generating convex hull.")
-  (let ((hull (convex-hull skeleton)))
-    (debug-message "Finished generating convex hull.")
-    hull))
-
-(defmethod generate-skeleton (draw-hull)
-  (let ((skeleton (generate-polyline)))
-    (if draw-hull
-	(generate-hull (points skeleton))
-	skeleton)))
-
-(defmethod draw-something (draw-hull &key (name "./drawing.eps"))
+(defmethod run (&key (name "./drawing.eps"))
   "The main method that generates the drawing and writes it to file."
-  (debug-message "Drawing something.")
-  ;; Set the random number generator seed to a random value
   (setf *random-state* (make-random-state t))
-  (let ((skeleton (generate-skeleton draw-hull)))
-    (write-debug-image skeleton)
-    (let ((drawing (draw-around-skeleton draw-hull skeleton)))
-      (write-drawing name drawing)))
-  (debug-message "Finished drawing something.")
-  ;(quit)
-  )
-
-;; Run the tests
-;;(run-tests)
-
-;; Call the main drawing routine
-;;(run)
+  (let ((d (draw-something)))
+    (write-drawing name d)))

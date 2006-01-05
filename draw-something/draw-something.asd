@@ -26,14 +26,9 @@
    (:file "utilities")
    (:file "postscript")
    (:file "geometry")
+   (:file "point")
+   (:file "line")
+   (:file "polyline")
+   (:file "turtle")
    (:file "drawing")
    (:file "draw-something")))
-
-;;; ----------------------------------------------------------------------
-;;; load the application
-;;; ----------------------------------------------------------------------
-
-(defun cl-user::load-draw-something ()
-  (load "draw-something.asd")
-  (format t "~%loading draw-something...~%")
-  (operate 'load-op :draw-something))
