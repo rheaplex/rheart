@@ -43,17 +43,22 @@
 
 (defmethod distance ((p point) (poly polyline))
   "The distance from a point to a polyline."
-  (let ((distance-to-poly nil)
-	(pts (points poly)))
-    (do ((i 1 (+ i 1)))
-	((= i (length pts)))
-      (let ((d (distance-point-line p 
-				    (aref pts (- i 1))
-				    (aref pts i))))
-	(if (or (not distance-to-poly) 
-		(< d distance-to-poly)) 
-	    (setf distance-to-poly d))))
-    distance-to-poly))
+  (cond ((= (length (points poly)) 0)
+	 nil) ;; Infinite distance? Zero?
+	((= (length (points poly)) 1)
+	 (distance p (aref (points poly) 0)))
+	(t ;; More than 1 point
+	 (let ((distance-to-poly nil)
+	       (pts (points poly)))
+	   (do ((i 1 (+ i 1)))
+	       ((= i (length pts)))
+	     (let ((d (distance-point-line p 
+					   (aref pts (- i 1))
+					   (aref pts i))))
+	       (if (or (not distance-to-poly) 
+		       (< d distance-to-poly)) 
+		   (setf distance-to-poly d))))
+	   distance-to-poly))))
 
 (defmethod highest-leftmost-point ((poly polyline))
   "The highest point, or highest and leftmost point (if several are highest)."

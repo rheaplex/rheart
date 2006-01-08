@@ -43,7 +43,8 @@
   (let* ((border (+ pen-distance pen-distance-tolerance pen-width))
 	 (figure-bounds (inset-rectangle (bounds the-drawing) border))
 	 (figure-count (random-range min-figures max-figures)))
-    (advisory-message (format nil "Generating ~a figures:" figure-count))
+    (advisory-message (format nil "Generating ~a figure skeletons:" 
+			      figure-count))
     (dotimes (i figure-count)
       (advisory-message (format nil " ~a" (+ i 1)))
       (setf (figures the-drawing)
@@ -82,7 +83,7 @@
 
 (defmethod draw-figures ((the-drawing drawing))
   "Draw each figure. We'll add a callback system to make this better."
-  (advisory-message (format nil "Drawing ~a figures:" 
+  (advisory-message (format nil "Drawing ~a figure outlines:" 
 			    (length (figures the-drawing))))
   (let ((i 0)) ;; Just for the advisory message
     (dolist (fig (figures the-drawing))
