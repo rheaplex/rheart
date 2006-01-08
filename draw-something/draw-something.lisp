@@ -16,27 +16,21 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Where should the pen go:
-;; Save with figure so we know how it was drawn?
-;; Keep with figure for caching?
-;; Generate in drawing function & pass into loop?
-;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (in-package "DRAW-SOMETHING")
+
+(defconstant save-directory "./drawings/")
 
 (defconstant drawing-width 600)
 (defconstant drawing-height 600)
-(defconstant border (* pen-distance 2))
 
 (defmethod generate-filename ()
   "Make a unique filename for the drawing, based on the current date & time."
   (multiple-value-bind (seconds minutes hours date month year)
-       (decode-universal-time (get-universal-time))
-    (format nil
-	    "~a-~2,,,'0@A~2,,,'0@A~2,,,'0@A-~2,,,'0@A~2,,,'0@A~2,,,'0@A~a" 
-	    "./drawings/drawing" year month date hours minutes seconds ".eps")))
+      (decode-universal-time (get-universal-time))
+    (format nil 
+	    "~a~a-~2,,,'0@A~2,,,'0@A~2,,,'0@A-~2,,,'0@A~2,,,'0@A~2,,,'0@A~a" 
+	    save-directory
+	    "drawing" year month date hours minutes seconds ".eps")))
 
 (defmethod write-figure-skeleton ((fig figure) ps)
   "Write the skeleton the drawing is made around."
@@ -68,6 +62,7 @@
 (defmethod write-drawing ((name string) (the-drawing drawing))
   "Write the drawing"
   (advisory-message (format nil "Writing drawing to file ~a .~%" name))
+  (ensure-directories-exist save-directory)
   (with-open-file (ps name :direction :output
 		      :if-exists :supersede)
     (write-eps-header (width (bounds the-drawing))
