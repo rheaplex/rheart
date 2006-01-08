@@ -72,9 +72,16 @@
 		  (y (aref points i)) 
 		  :to to)))
 
-(defmethod write-rectfill (x y w h &key (to *ps-stream*))
+(defmethod write-rectfill ((rect rectangle) &key (to *ps-stream*))
   "Draw a rectangle with the given co-ordinates and dimensions."
-  (format to "~F ~F ~F ~F rectfill~%" x y w h))
+  (format to "~F ~F ~F ~F rectfill~%" (x rect) (y rect) (width rect) 
+	  (height rect)))
+
+
+(defmethod write-rectstroke ((rect rectangle) &key (to *ps-stream*))
+  "Draw a rectangle with the given co-ordinates and dimensions."
+  (format to "~F ~F ~F ~F rectstroke~%" (x rect) (y rect) (width rect) 
+	  (height rect)))
 
 
 

@@ -24,12 +24,12 @@
   :components
   ((:file "package")
    (:file "utilities")
-   (:file "postscript")
    (:file "geometry")
    (:file "point")
    (:file "line")
    (:file "rectangle")
    (:file "polyline")
+   (:file "postscript")
    (:file "turtle")
    (:file "figure")
    (:file "drawing")

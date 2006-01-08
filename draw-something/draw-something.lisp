@@ -59,6 +59,11 @@
   ;;(write-figure-skeleton fig ps)
   (write-figure-stroke fig ps))
 
+(defmethod write-frame ((the-drawing drawing) ps)
+  "Frame the drawing. Frame is bigger than PS bounds but should be OK."
+  (write-rectstroke (inset-rectangle (bounds the-drawing) -1)
+		    :to ps))
+
 (defmethod write-drawing ((name string) (the-drawing drawing))
   "Write the drawing"
   (advisory-message (format nil "Writing drawing to file ~a .~%" name))
@@ -68,6 +73,7 @@
     (write-eps-header (width (bounds the-drawing))
 		      (height (bounds the-drawing))
 		      :to ps)
+    (write-frame the-drawing ps)
     (dolist (fig (figures the-drawing))
       (write-figure fig ps))
     (write-eps-footer :to ps)))
