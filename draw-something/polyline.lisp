@@ -19,8 +19,9 @@
 
 (defclass polyline ()
   ;; Optimised to use arrays not lists to avoid terrible (distance) consing
+  ;; For speed set initial dimension to a size unlikely to need increasing
   ((points :accessor points
-	   :initform (make-array 1 
+	   :initform (make-array 1000 
 				 :adjustable t
 				 :fill-pointer 0)
 	   :initarg :points
@@ -32,12 +33,12 @@
   (vector-push-extend pt
 		      (points poly)))
 
-(defmethod make-random-polyline-in-bounds (x y width height count)
+(defmethod make-random-polyline-in-rectangle (rect count)
   "Create a polyline with the given number of points in the given bounds."
   (let ((poly (make-instance 'polyline)))
     (dotimes (i count)
       (append-point poly
-		    (random-point-in-bounds x y width height)))
+		    (random-point-in-rectangle rect)))
     poly))
 
 (defmethod distance ((p point) (poly polyline))

@@ -19,24 +19,22 @@
 
 (defclass point ()
   ((x :accessor x 
+      :type float
       :initform  0.0
       :initarg :x
       :documentation "The x co-ordinate of the point.")
    (y :accessor y
+      :type float
       :initform 0.0
       :initarg :y
       :documentation "The y co-ordinate of the point."))
   (:documentation "A simple cartesian point on the picture plane (or page). 
                    y goes up"))
 
-(defmethod distance ((a point) (b point))
-  "The distance between two points"
-  (sqrt (+ (expt (- (x b)
-		    (x a))
-		 2)
-	   (expt (- (y b)
-		    (y a))
-		 2))))
+(defmethod distance ((left point) (right point))
+  "The distance between two points."
+  (sqrt (+ (expt (- (x right) (x left)) 2)
+	   (expt (- (y right) (y left)) 2))))
 
 (defmethod random-point-in-bounds (x y width height)
   "Make a point placed randomly within the given bounds."

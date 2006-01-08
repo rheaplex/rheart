@@ -19,13 +19,15 @@
 
 (defclass line ()
   ((from :accessor from
+	 :type point
 	 :initform (make-instance 'point)
 	 :initarg :from
 	 :documentation "The start of the line.")
    (to :accessor to
-	 :initform (make-instance 'point)
-	 :initarg :to
-	 :documentation "The end of the line."))
+       :type point
+       :initform (make-instance 'point)
+       :initarg :to
+       :documentation "The end of the line."))
    (:documentation "A simple line (segment) between two points."))
 
 ;;        nearest_point_on_line

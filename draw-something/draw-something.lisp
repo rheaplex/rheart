@@ -1,3 +1,4 @@
+
 ;;  run.lisp -  A toy aesthetics description and evaluation system
 ;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
 ;;
@@ -15,50 +16,79 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Where should the pen go:
+;; Save with figure so we know how it was drawn?
+;; Keep with figure for caching?
+;; Generate in drawing function & pass into loop?
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (in-package "DRAW-SOMETHING")
 
 (defconstant drawing-width 600)
 (defconstant drawing-height 600)
 (defconstant border (* pen-distance 2))
 
-(defmethod write-skeleton ((d drawing) ps)
+(defmethod generate-filename ()
+  "Make a unique filename for the drawing, based on the current date & time."
+  (multiple-value-bind (seconds minutes hours date month year)
+       (decode-universal-time (get-universal-time))
+    (format nil
+	    "~a-~2,,,'0@A~2,,,'0@A~2,,,'0@A-~2,,,'0@A~2,,,'0@A~2,,,'0@A~a" 
+	    "./drawings/drawing" year month date hours minutes seconds ".eps")))
+
+(defmethod write-figure-skeleton ((fig figure) ps)
   "Write the skeleton the drawing is made around."
   (write-rgb 0.4 0.4 1.0 :to ps)
   (write-new-path :to ps)
-  (write-subpath (points (skeleton d)) :to ps)
+  (write-subpath (points (skeleton fig)) :to ps)
   (write-stroke :to ps))
 
-(defmethod write-outline ((d drawing) ps)
+(defmethod write-figure-fill ((fig figure) ps)
+  "Write the drawing outline."
+    (write-rgb 1.0 1.0 1.0 :to ps)
+    (write-new-path :to ps)
+    (write-subpath (points (outline fig)) :to ps)
+    (write-fill :to ps))
+
+(defmethod write-figure-stroke ((fig figure) ps)
   "Write the drawing outline."
     (write-rgb 0.0 0.0 0.0 :to ps)
     (write-new-path :to ps)
-    (write-subpath (points (outline d)) :to ps)
+    (write-subpath (points (outline fig)) :to ps)
     (write-stroke :to ps))
 
-(defmethod write-drawing ((name string) (d drawing))
+(defmethod write-figure ((fig figure) ps)
+  "Write the figure for early multi-figure versions of draw-something."
+  (write-figure-fill fig ps)
+  ;;(write-figure-skeleton fig ps)
+  (write-figure-stroke fig ps))
+
+(defmethod write-drawing ((name string) (the-drawing drawing))
   "Write the drawing"
-  (with-open-file (ps name 
-		      :direction :output
+  (advisory-message (format nil "Writing drawing to file ~a .~%" name))
+  (with-open-file (ps name :direction :output
 		      :if-exists :supersede)
-    (write-eps-header drawing-width drawing-height :to ps)
-    ;;(write-skeleton d ps)
-    (write-outline d ps)
+    (write-eps-header (width (bounds the-drawing))
+		      (height (bounds the-drawing))
+		      :to ps)
+    (dolist (fig (figures the-drawing))
+      (write-figure fig ps))
     (write-eps-footer :to ps)))
 
 (defmethod draw-something ()
   "Make a drawing."
-  (let ((d (make-drawing border 
-			 border 
-			 (- drawing-width border) 
-			 (- drawing-height border) 
-			 12)))
-    (do () 
-	((should-finish d))
-      (draw-step d))
-    d))
+  (let ((the-drawing (make-drawing)))
+    (draw-figures the-drawing)
+    the-drawing))
 
-(defmethod run (&key (name "./drawing.eps"))
+(defmethod run ()
   "The main method that generates the drawing and writes it to file."
+  (advisory-message "Starting draw-something.~%")
   (setf *random-state* (make-random-state t))
-  (let ((d (draw-something)))
-    (write-drawing name d)))
+  (let ((filename (generate-filename)))
+    (write-drawing filename
+		   (draw-something))
+  (advisory-message "Finished draw-something.~%")
+#+openmcl (ccl::os-command (format nil "open ~a" filename))))

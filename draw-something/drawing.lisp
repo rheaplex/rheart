@@ -17,121 +17,76 @@
 
 (in-package "DRAW-SOMETHING")
 
-(defconstant pen-distance 5.0)
-(defconstant pen-distance-tolerance 1.5)
-(defconstant pen-forward-step 2.0)
-(defconstant pen-turn-step 0.02)
+(defconstant min-figures 1)
+(defconstant max-figures 12)
+(defconstant min-figure-points 1)
+(defconstant max-figure-points 12)
 
-(defconstant drawing-step-limit 5000)
+(defconstant min-drawing-size 200.0)
+(defconstant max-drawing-size 600.0)
 
 (defclass drawing ()
-  ((pen :accessor pen
-	:type turtle
-	:initarg :pen
-	:documentation "The pen drawing around the outline.")
-   (skeleton :accessor skeleton 
-	     :type polyline
-	     :initarg :skeleton
-	     :documentation "The guide shape for the outline.")
-   (outline :accessor outline
-	    :type polyline
-	    :initform (make-instance 'polyline)
-	    :documentation "The cached drawing outline."))
+  ((bounds :accessor bounds
+	   :type rectangle
+	   :initarg :bounds
+	   :documentation "The dimensions of the drawing.")
+   (figures :accessor figures
+	    :type list
+	    :initarg :figures
+	    :initform '()
+	    :documentation "The figures of the drawing."))
    (:documentation "A drawing in progress."))
 
-(defmethod first-point ((the-drawing drawing))
-  "Get the first point in the outline of the drawing."
-  (aref (points (outline the-drawing))
-	0))
+(defmethod make-figures ((the-drawing drawing))
+  "Make the figures for the drawing."
+  ;; Replace with a collecting loop
+  (let* ((border (+ pen-distance pen-distance-tolerance pen-width))
+	 (figure-bounds (inset-rectangle (bounds the-drawing) border))
+	 (figure-count (random-range min-figures max-figures)))
+    (advisory-message (format nil "Generating ~a figures:" figure-count))
+    (dotimes (i figure-count)
+      (advisory-message (format nil " ~a" (+ i 1)))
+      (setf (figures the-drawing)
+	    (cons 
+	     (make-figure (random-rectangle-in-rectangle figure-bounds)
+			  (random-range min-figure-points
+					max-figure-points))
+	     (figures the-drawing)))))
+  (advisory-message ".~%"))
 
-(defmethod point-count ((the-drawing drawing))
-  "The number of points in the outline of the drawing."
-  (length (points (outline the-drawing))))
+(defmethod make-drawing-bounds ()
+  "Make a bounds rectangle for a drawing."
+  (make-instance 'rectangle
+		 :x 0.0
+		 :y 0.0
+		 :width (random-range min-drawing-size 
+				      max-drawing-size)
+		 :height (random-range min-drawing-size 
+				       max-drawing-size)))
 
-(defmethod most-recent-point ((the-drawing drawing))
-  "The most recent point added to the outline of the drawing."
-  (aref (points (outline the-drawing))
-	(- (point-count the-drawing) 
-	   1))) 
-
-(defmethod make-drawing-start-point ((skeleton polyline))
-  "Get the point to start drawing at."
-  (let ((start-point (highest-leftmost-point skeleton)))
-    (make-instance 'point 
-		   :x (x start-point)
-		   :y (+ (y start-point) 
-			 pen-distance))))
-
-(defmethod make-drawing-pen ((skeleton polyline))
-  "Make the pen for the drawing."
-  (make-instance 'turtle 
-		 :location (make-drawing-start-point skeleton)
-		 :turn-step pen-turn-step
-		 :move-step pen-forward-step))
-
-(defmethod make-drawing (x y width height num-points)
+(defmethod make-drawing ()
   "Make a drawing, ready to be started."
-  (let ((skel (make-random-polyline-in-bounds x y width height num-points)))
-    (let ((the-drawing (make-instance 'drawing
-				      :skeleton skel
-				      :pen (make-drawing-pen skel))))
-      (append-point (outline the-drawing) 
-		    (location (pen the-drawing)))
-      the-drawing)))
+  (let ((the-drawing (make-instance 'drawing :bounds (make-drawing-bounds))))
+    (make-figures the-drawing)
+    the-drawing))
 
-(defmethod path-ready-to-close ((the-drawing drawing))
-  "Would drawing the next section bring us close enough to the start of the path that we should close the path?"
-  (and (> (point-count the-drawing) 2) ;; Ignore very first point
-       (< (distance (most-recent-point the-drawing)
-		    (first-point the-drawing))
-	  (move-step (pen the-drawing)))))
+(defmethod set-next-figure ((the-drawing drawing))
+  "Move on to the next figure and make the pen for it."
+  (setf (current-figure-index the-drawing)
+	(+ (curent-figure-index the-drawing) 1)))
 
-(defmethod path-timeout ((the-drawing drawing))
-  "Make sure that a failure of the drawing algorithm hasn't resulted in a loop."
-  (> (point-count the-drawing)
-     drawing-step-limit))
+(defmethod set-pen-for-next-figure ((the-drawing drawing))
+  "Make a pen near the next figure and set it as current."
+  (setf (pen the-drawing)
+	(make-figure-pen (current-figure the-drawing))))
 
-(defmethod should-finish ((the-drawing drawing))
-  "Decide if the drawing should finish."
-  (or (path-ready-to-close the-drawing)
-      (path-timeout the-drawing)))
-
-(defmethod next-pen-distance ((the-drawing drawing))
-  "How far the pen will be from the guide shape when it next moves forwards."
-  (distance (next-point (pen the-drawing)) 
-	    (skeleton the-drawing)))
-
-(defmethod next-pen-too-close ((the-drawing drawing))
-  "Will the pen move to be too close from the guide shape next time?"
-  (< (random pen-distance-tolerance)
-     (- (next-pen-distance the-drawing)
-	pen-distance)))
-
-(defmethod next-pen-too-far ((the-drawing drawing ))
-  "Will the pen move to be too far from the guide shape next time?"
-  (< (random pen-distance-tolerance)
-     (- pen-distance
-	(next-pen-distance the-drawing))))
-     
-(defmethod ensure-next-pen-far-enough ((the-drawing drawing))
-  "If the pen would move too close next time, turn it left until it wouldn't."
-  (loop while (next-pen-too-close the-drawing)
-     do (left (pen the-drawing))))
-     
-(defmethod ensure-next-pen-close-enough ((the-drawing drawing))
-  "If the pen would move too far next time, turn it right until it wouldn't."
-  (loop while (next-pen-too-far the-drawing)
-     do (right (pen the-drawing))))
-    
-(defmethod adjust-next-pen ((the-drawing drawing))
-  "Set the pen back on the correct path around the shape."
-  (ensure-next-pen-far-enough the-drawing)
-  (ensure-next-pen-close-enough the-drawing))
-
-(defmethod draw-step ((the-drawing drawing))
-  "Find the next point forward along the drawn outline of the shape."
-  (adjust-next-pen the-drawing)
-  (forward (pen the-drawing))
-  (append-point (outline the-drawing)
-		(location (pen the-drawing)))
-  (most-recent-point the-drawing))
+(defmethod draw-figures ((the-drawing drawing))
+  "Draw each figure. We'll add a callback system to make this better."
+  (advisory-message (format nil "Drawing ~a figures:" 
+			    (length (figures the-drawing))))
+  (let ((i 0)) ;; Just for the advisory message
+    (dolist (fig (figures the-drawing))
+      (advisory-message (format nil " ~a" (+ i 1)))
+      (setf i (+ i 1))
+      (draw-figure fig)))
+  (advisory-message ".~%"))

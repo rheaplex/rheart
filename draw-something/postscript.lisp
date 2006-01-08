@@ -22,7 +22,8 @@
 (defmethod write-eps-header (width height &key (to *ps-stream*))
   "Write the standard raw PostScript header."
   (format to "%!PS-Adobe-3.0 EPSF-3.0~%")
-  (format to "%%BoundingBox: 0 0 ~a ~a~%" width height))
+  (format to "%%BoundingBox: 0 0 ~a ~a~%" width height)
+  (format to "/L {lineto} bind def~%/M {moveto} bind def~%"))
 
 (defmethod write-eps-footer (&key (to *ps-stream*))
   "Write the standard (but optional PostScript footer"
@@ -54,11 +55,11 @@
 
 (defmethod write-moveto (x y &key (to *ps-stream*))
   "Move the PostScript pen to the given co-ordinates"
-  (format to "~F ~F moveto~%" x y))
+  (format to "~,3F ~,3F M " x y))
 
 (defmethod write-lineto (x y &key (to *ps-stream*))
   "Draw a line with the PostScript pen to the given co-ordinates"
-  (format to "~F ~F lineto~%" x y))
+  (format to "~,3F ~,3F L " x y))
 
 (defmethod write-subpath (points &key (to *ps-stream*))
   "Write a subpath of a PostScript path."

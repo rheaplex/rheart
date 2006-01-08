@@ -23,3 +23,16 @@
 	  "~A~%" 
 	  msg)
   (finish-output *debug-io*))
+
+(defmethod advisory-message (msg)
+  "Write the message to the error stream, not to standard output. No newline."
+  (format *debug-io* 
+	  msg)
+  (finish-output *debug-io*))
+
+(defmethod random-range (a b)
+  "Make a random number from a to one below b."
+  (let ((range (- b a)))
+    (if (= range 0) ;; OpenMCL's random doesn't like 0
+	a
+	(+ (random range) a))))
