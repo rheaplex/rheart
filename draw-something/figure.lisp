@@ -18,11 +18,11 @@
 (in-package "DRAW-SOMETHING")
 
 (defconstant pen-distance 5.0)
-(defconstant pen-distance-tolerance 1.5)
+(defconstant pen-distance-tolerance 1.4)
 (defconstant pen-forward-step 2.0)
-(defconstant pen-turn-step 0.02)
+(defconstant pen-turn-step 0.01)
 
-(defconstant pen-width 2.0)
+(defconstant pen-width 1.0)
 
 (defconstant figure-step-limit 5000)
 
@@ -38,7 +38,12 @@
    (pen :accessor pen
 	:type turtle
 	:initarg :pen
-	:documentation "The pen drawing around the skeleton. Make sensible."))
+	:documentation "The pen drawing around the skeleton. Make sensible.")
+   (figure-colour :accessor figure-colour
+		  :type colour
+		  :initarg :colour
+		  :initform (random-colour)
+		  :documentation "The flat body colour of the figure."))
   (:documentation "A figure drawn in the drawing."))
 
 ;; Configure pen for each figure (pos, reset heading)
@@ -79,6 +84,7 @@
 
 (defmethod make-figure ((bounds rectangle) (num-points real))
   "Make a figure, ready to be started."
+  (advisory-message (format nil "Figure: ~d points.~%" num-points))
   (let* ((skel (make-random-polyline-in-rectangle bounds num-points))
 	 (the-figure (make-instance 'figure
 				    :pen (make-figure-pen skel)

@@ -32,32 +32,32 @@
 	:documentation "The brightness of the colour."))
   (:documentation "A colour"))
 
+(defmethod random-colour ()
+  "Make a random colour."
+  (make-instance 'colour :hue (random 1.0) :saturation (random 1.0)
+		 :brightness (random 1.0)))
+
 (defmethod hsb-to-rgb ((col colour))
   "Convert the hue/saturation/brightness colour to RGB."
   (if (= (saturation col) 0)
-      (list (value col) (value col) (value col))
-      (let* ((h (/ (mod (hue col) 
-			360.0) 
-		   60))
-	     (i (floor h))
-	     (f (- h i))
-	     (p (* v 
+      (values-list (list (brightness col) (brightness col) (brightness col)))
+      (let* ((p (* (brightness col) 
 		   (- 1.0 
 		      (saturation col))))
-	     (q (* v 
+	     (q (* (brightness col) 
 		   (- 1.0
-		      (* s f))))
-	     (t (* v
+		      (* (saturation col) (hue col)))))
+	     (tt (* (brightness col)
 		   (- 1.0
-		      (* s
-			 (- 1.0 f))))))
-	(case i
-	  ((0) (list v t p)) ;; Red
-	  ((1) (list q v p)) ;; Yellow
-	  ((2) (list p v t)) ;; Green
-	  ((3) (list p q v)) ;; Cyan
-	  ((4) (list t p v)) ;; Blue
-	  ((5) (list v p q)))))) ;; Magenta
+		      (* (saturation col)
+			 (- 1.0 (hue col)))))))
+	(case (floor (* (hue col) 5.0))
+	  ((0) (values-list (list (brightness col) tt p))) ;; Red
+	  ((1) (values-list (list q (brightness col) p))) ;; Yellow
+	  ((2) (values-list (list p (brightness col) tt))) ;; Green
+	  ((3) (values-list (list p q (brightness col)))) ;; Cyan
+	  ((4) (values-list (list tt p (brightness col)))) ;; Blue
+	  ((5) (values-list (list (brightness col) p q))))))) ;; Magenta
 
 (defmethod difference ((a colour) (b colour))
   "Decide how different two colours are. 0 .. approx 2.1"
@@ -67,9 +67,9 @@
      (abs (- (saturation a) 
 	     (saturation b)))
      (abs (- (brightness a) 
-	     (brightness b))))
+	     (brightness b)))))
 
-(defmethod different-value ((target float) (separation float) (wrap float))
+#|(defmethod different-value ((target float) (separation float) (wrap float))
   "Make a value 0 .. wrap where value is < or > target +/- separation."
   (cond 
     ;; Range is from 0 .. target - separation
@@ -91,14 +91,5 @@
 	      (random (- wrap 
 			 (* 2.0 
 			    separation))))
-      wrap)))))
-
-(defmethod make-different ((col colour))
-  ;; Which property(ies?) 1..3
-  ;; make & return
-    
-)  
-
-same, opposite, similar/adjacent, different
-
+      wrap)))))|#
 

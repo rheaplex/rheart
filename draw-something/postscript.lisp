@@ -33,6 +33,10 @@
   "Set the PostScript RGB colour value."
   (format to "~F ~F ~F setrgbcolor~%" r g b))
 
+(defmethod write-colour ((col colour) &key (to *ps-stream*))
+  (multiple-value-bind (r g b) (hsb-to-rgb col)
+    (write-rgb r g b :to to)))
+
 (defmethod write-fill (&key (to *ps-stream*))
   "Write the fill operator."
   (format to "fill~%"))

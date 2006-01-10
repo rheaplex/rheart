@@ -20,9 +20,6 @@
 
 (defconstant save-directory "./drawings/")
 
-(defconstant drawing-width 600)
-(defconstant drawing-height 600)
-
 (defmethod generate-filename ()
   "Make a unique filename for the drawing, based on the current date & time."
   (multiple-value-bind (seconds minutes hours date month year)
@@ -41,7 +38,7 @@
 
 (defmethod write-figure-fill ((fig figure) ps)
   "Write the drawing outline."
-    (write-rgb 1.0 1.0 1.0 :to ps)
+    (write-colour (figure-colour fig) :to ps)
     (write-new-path :to ps)
     (write-subpath (points (outline fig)) :to ps)
     (write-fill :to ps))
@@ -59,6 +56,11 @@
   ;;(write-figure-skeleton fig ps)
   (write-figure-stroke fig ps))
 
+(defmethod write-ground ((the-drawing drawing) ps)
+  "Colour the drawing ground."
+  (write-colour (ground the-drawing) :to ps)
+  (write-rectfill (bounds the-drawing) :to ps))
+
 (defmethod write-frame ((the-drawing drawing) ps)
   "Frame the drawing. Frame is bigger than PS bounds but should be OK."
   (write-rectstroke (inset-rectangle (bounds the-drawing) -1)
@@ -73,6 +75,7 @@
     (write-eps-header (width (bounds the-drawing))
 		      (height (bounds the-drawing))
 		      :to ps)
+    (write-ground the-drawing ps)
     (write-frame the-drawing ps)
     (dolist (fig (figures the-drawing))
       (write-figure fig ps))
@@ -88,6 +91,7 @@
   "The main method that generates the drawing and writes it to file."
   (advisory-message "Starting draw-something.~%")
   (setf *random-state* (make-random-state t))
+  (format t "Random state: ~a.~%" (write-to-string *random-state*))
   (let ((filename (generate-filename)))
     (write-drawing filename
 		   (draw-something))

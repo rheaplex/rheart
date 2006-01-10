@@ -29,6 +29,7 @@
    (:file "line")
    (:file "rectangle")
    (:file "polyline")
+   (:file "colour")
    (:file "postscript")
    (:file "turtle")
    (:file "figure")

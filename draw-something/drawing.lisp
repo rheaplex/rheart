@@ -34,7 +34,12 @@
 	    :type list
 	    :initarg :figures
 	    :initform '()
-	    :documentation "The figures of the drawing."))
+	    :documentation "The figures of the drawing.")
+   (ground :accessor ground
+	   :type colour
+	   :initarg :ground
+	   :initform (random-colour)
+	   :documentation "The flat body colour of the figure."))
    (:documentation "A drawing in progress."))
 
 (defmethod make-figures ((the-drawing drawing))
@@ -43,17 +48,16 @@
   (let* ((border (+ pen-distance pen-distance-tolerance pen-width))
 	 (figure-bounds (inset-rectangle (bounds the-drawing) border))
 	 (figure-count (random-range min-figures max-figures)))
-    (advisory-message (format nil "Generating ~a figure skeletons:" 
+    (advisory-message (format nil "Generating ~a figure skeletons:~%" 
 			      figure-count))
     (dotimes (i figure-count)
-      (advisory-message (format nil " ~a" (+ i 1)))
+      (advisory-message (format nil "  ~a. " (+ i 1)))
       (setf (figures the-drawing)
 	    (cons 
 	     (make-figure (random-rectangle-in-rectangle figure-bounds)
 			  (random-range min-figure-points
 					max-figure-points))
-	     (figures the-drawing)))))
-  (advisory-message ".~%"))
+	     (figures the-drawing))))))
 
 (defmethod make-drawing-bounds ()
   "Make a bounds rectangle for a drawing."
@@ -68,6 +72,9 @@
 (defmethod make-drawing ()
   "Make a drawing, ready to be started."
   (let ((the-drawing (make-instance 'drawing :bounds (make-drawing-bounds))))
+    (format t "Drawing size: ~dx~d.~%" 
+	    (floor (width (bounds the-drawing)))
+	    (floor (height (bounds the-drawing))))
     (make-figures the-drawing)
     the-drawing))
 
@@ -83,8 +90,7 @@
 
 (defmethod draw-figures ((the-drawing drawing))
   "Draw each figure. We'll add a callback system to make this better."
-  (advisory-message (format nil "Drawing ~a figure outlines:" 
-			    (length (figures the-drawing))))
+  (advisory-message "Drawing figure outlines:")
   (let ((i 0)) ;; Just for the advisory message
     (dolist (fig (figures the-drawing))
       (advisory-message (format nil " ~a" (+ i 1)))
