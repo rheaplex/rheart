@@ -25,6 +25,12 @@
 (defconstant min-drawing-size 200.0)
 (defconstant max-drawing-size 600.0)
 
+(defconstant figure-hints-choices 
+  '((overlap separate)
+    (big medium small)
+    (complex simple)
+    (many some few)))
+
 (defclass drawing ()
   ((bounds :accessor bounds
 	   :type rectangle
@@ -35,6 +41,11 @@
 	    :initarg :figures
 	    :initform '()
 	    :documentation "The figures of the drawing.")
+   (figure-hints :accessor hints
+		 :type list
+		 :initarg :hints
+		 :initform '()
+		 :documentation "The requirement tags for the drawing.")
    (ground :accessor ground
 	   :type colour
 	   :initarg :ground
@@ -42,51 +53,88 @@
 	   :documentation "The flat body colour of the figure."))
    (:documentation "A drawing in progress."))
 
+(defmethod make-figure-hints ()
+  "Choose hints for the drawing."
+  (let ((hints '()))
+    (loop for options in figure-hints-choices
+	 do (let ((hint (maybe-choose-one-of options)))
+	      (when hint
+		(setf hints (cons hint hints)))))
+    hints))
+
+(defmethod rectangle-overlaps-figures ((rect rectangle) (the-drawing drawing))
+  "Check to see if the figure overlaps any of the others."
+  (dolist (other-fig (figures the-drawing))
+    (when (intersects rect (bounds other-fig))
+      (return t))))
+
+;; Make these account for pen width, distance and tolerance.
+;; Hmm. Skeletons for some will be drawn before outlines for others,
+;; this embodies planning but not feedback.
+
+;; Handle other hints
+
+(defmethod make-overlapping-figure-bounds (the-drawing max-bounds)
+  "Make a bounding rectangle that overlaps at least one other."
+    (let (this-figure-bounds)
+      (loop 
+	 do (setf this-figure-bounds
+		  (random-rectangle-in-rectangle max-bounds))
+	 until (rectangle-overlaps-figures this-figure-bounds
+					   the-drawing)
+	 finally (return this-figure-bounds))))
+
+(defmethod make-non-overlapping-figure-bounds (the-drawing max-bounds)
+  "Make a bounding rectangle that doesn't overlap another."
+  (let (this-figure-bounds)
+    (loop 
+       do (setf this-figure-bounds
+		(random-rectangle-in-rectangle max-bounds))
+	    while (rectangle-overlaps-figures this-figure-bounds
+					      the-drawing)
+       finally (return this-figure-bounds))))
+
+(defmethod make-drawing-figure-bounds (the-drawing max-bounds)
+  "Make the bounds for one figure in the drawing."
+    (cond
+      ((member 'overlap (hints the-drawing))
+       (make-overlapping-figure-bounds the-drawing max-bounds))
+      ((member 'separate (hints the-drawing))
+       (make-non-overlapping-figure-bounds the-drawing max-bounds))
+      (t (random-rectangle-in-rectangle max-bounds))))
+  
 (defmethod make-figures ((the-drawing drawing))
   "Make the figures for the drawing."
-  ;; Replace with a collecting loop
-  (let* ((border (+ pen-distance pen-distance-tolerance pen-width))
-	 (figure-bounds (inset-rectangle (bounds the-drawing) border))
-	 (figure-count (random-range min-figures max-figures)))
+  (let ((figure-bounds (inset-rectangle (bounds the-drawing) 
+					(* pen-distance 2.0)))
+	(figure-count (random-range min-figures max-figures)))
     (advisory-message (format nil "Generating ~a figure skeletons:~%" 
 			      figure-count))
-    (dotimes (i figure-count)
-      (advisory-message (format nil "  ~a. " (+ i 1)))
-      (setf (figures the-drawing)
-	    (cons 
-	     (make-figure (random-rectangle-in-rectangle figure-bounds)
-			  (random-range min-figure-points
-					max-figure-points))
-	     (figures the-drawing))))))
+    (loop for i from 0 below figure-count
+       collect (make-figure (make-drawing-figure-bounds the-drawing
+							figure-bounds)
+			    (random-range min-figure-points
+					  max-figure-points)))))
 
 (defmethod make-drawing-bounds ()
   "Make a bounds rectangle for a drawing."
-  (make-instance 'rectangle
-		 :x 0.0
-		 :y 0.0
-		 :width (random-range min-drawing-size 
-				      max-drawing-size)
-		 :height (random-range min-drawing-size 
-				       max-drawing-size)))
+  (make-instance 'rectangle :x 0 :y 0
+		 :width (round (random-range min-drawing-size 
+					     max-drawing-size))
+		 :height (round (random-range min-drawing-size 
+					      max-drawing-size))))
 
 (defmethod make-drawing ()
   "Make a drawing, ready to be started."
-  (let ((the-drawing (make-instance 'drawing :bounds (make-drawing-bounds))))
-    (format t "Drawing size: ~dx~d.~%" 
+  (let ((the-drawing (make-instance 'drawing 
+				    :bounds (make-drawing-bounds)
+				    :hints (make-figure-hints))))
+    (format t "Drawing. Size: ~dx~d. Hints: ~a~%" 
 	    (floor (width (bounds the-drawing)))
-	    (floor (height (bounds the-drawing))))
-    (make-figures the-drawing)
+	    (floor (height (bounds the-drawing)))
+	    (hints the-drawing))
+    (setf (figures the-drawing) (make-figures the-drawing))
     the-drawing))
-
-(defmethod set-next-figure ((the-drawing drawing))
-  "Move on to the next figure and make the pen for it."
-  (setf (current-figure-index the-drawing)
-	(+ (curent-figure-index the-drawing) 1)))
-
-(defmethod set-pen-for-next-figure ((the-drawing drawing))
-  "Make a pen near the next figure and set it as current."
-  (setf (pen the-drawing)
-	(make-figure-pen (current-figure the-drawing))))
 
 (defmethod draw-figures ((the-drawing drawing))
   "Draw each figure. We'll add a callback system to make this better."

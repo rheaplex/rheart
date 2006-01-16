@@ -19,22 +19,22 @@
 
 (defclass rectangle ()
   ((x :accessor x 
-      :type float
+      :type real
       :initform  0.0
       :initarg :x
       :documentation "The lower left x co-ordinate of the rectangle.")
    (y :accessor y
-      :type float
+      :type real
       :initform 0.0
       :initarg :y
       :documentation "The lower left y co-ordinate of the rectangle.")
    (width :accessor width
-      :type float
+      :type real
       :initform  0.0
       :initarg :width
       :documentation "The width of the rectangle.")
    (height :accessor height
-      :type float
+      :type real
       :initform 0.0
       :initarg :height
       :documentation "The height of the rectangle."))
@@ -48,12 +48,9 @@
 
 (defmethod random-points-in-rectangle ((bounds-rect rectangle) count)
   "Create the specified number of points placed randomly within the given rectangle."
-  (let ((points (make-array 0 
-			    :adjustable t 
-			    :fill-pointer 0)))
-  (dotimes (i count)
-    (vector-push-extend (random-point-in-rectangle bounds-rect) points))
-  points))
+  (let ((points (make-vector count)))
+    (map-into (random-point-in-rectangle bounds-rect) points)
+    points))
 
 (defmethod random-rectangle-in-rectangle ((bounds-rect rectangle))
   "Make a random rectangle of at least size 1x1 in another rectangle."
@@ -76,3 +73,51 @@
 		 :y (+ (y source) offset)
 		 :width (- (width source) (* offset 2.0))
 		 :height (- (height source) (* offset 2.0))))
+
+(defmethod area ((rect rectangle))
+  "Get the rectangle's area."
+  (* (width rect) (height rect)))
+
+(defmethod contains-point-co-ordinates ((rect rectangle) x y)
+  "Find whether the rectangle contains the point."
+  (if (and (> x (y rect))
+	   (< x (+ (x rect) (width rect)))
+	   (> y (y rect))
+	   (< y (+ (y rect) (height rect))))
+      t
+      nil))
+
+(defmethod contains ((rect rectangle) (p point))
+  "Find whether the rectangle contains the point."
+  (contains-point-co-ordinates rect (x p) (y p)))
+
+(defmethod intersects ((rect1 rectangle) (rect2 rectangle))
+  "Find whether the rectangles intersect."
+  (and (< (x rect1) (+ (x rect2) (width rect2)))
+       (< (y rect1) (+ (y rect2) (height rect2)))
+       (> (+ (x rect1) (width rect1)) (x rect2))
+       (> (+ (y rect1) (height rect1)) (y rect2))))
+
+(defmethod include-point ((rect rectangle) (p point))
+  "Destructively expand the rectangle to include the point."
+  (let ((right (+ (x rect) (width rect)))
+	(top (+ (y rect) (height rect))))
+    (cond
+      ((< (x p) (x rect)) 
+       (setf (width rect) 
+	     (+ (width rect) (- (x rect) (x p))))
+       (setf (x rect) (x p)))
+      ((> (x p) right) 
+       (setf (width rect) 
+	     (+ (width rect) (- (x p) right))))
+      ((< (y p) (y rect)) 
+       (setf (height rect) 
+	     (+ (height rect) (- (y rect) (y p))))
+       (setf (y rect) (y p)))
+      ((> (y p) top) 
+       (setf (height rect) 
+	     (+ (height rect) (- (y p) top)))))))
+
+(defmethod rectangle-from-point ((p point))
+  "Make a rectangle for a point,"
+  (make-instance 'rectangle :x (x p) :y (y p) :width 0 :height 0))

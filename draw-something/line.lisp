@@ -79,3 +79,51 @@
 (defmethod distance-point-line ((p point) (from point) (to point))
   "The distance between a point and a line."
   (distance p (nearest-point-on-line-points p from to)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Line-line intersection
+;; http://astronomy.swin.edu.au/~pbourke/geometry/lineline2d/
+;; Returns the time where the second line intersects the first line
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defmethod lines-intersect-co-ordinates (p1x p1y p2x p2y ;; First line 
+					 p3x p3y p4x p4y);; Second line 
+  "Find whether the two lines, expressed as 8 co-ordinates, intersect."
+  (let ((denominator (- (* (- p4y p3y)
+			   (- p2x p1x)) 
+			(* (- p4x p3x)
+			   (- p2y p1y)))))
+    (if (= denominator 0.0)
+	nil ;; Parallel lines
+	(let ((ua (/ (- (* (- p4x p3x) 
+			   (- p1y p3y))
+			(* (- p4y p3y) 
+			   (- p1x p3x)))
+		     denominator))
+	      (ub (/ (- (* (- p2x p1x) 
+			   (- p1y p3y)) 
+			(* (- p2y p1y) 
+			   (- p1x p3x))) 
+		     denominator)))
+	  (if (and (>= ua 0.0)
+		   (<= ua 1.0)
+		   (>= ub 0.0)
+		   (<= ub 1.0)) ;; Intersection (or not)
+	      ua
+	      nil)))))
+
+(defmethod lines-intersect-points ((l1p1 point) (l1p2 point)
+				   (l2p1 point) (l2p2 point))
+  "Find whether the two lines, expressed as 4 points intersect."
+  (lines-intersect-co-ordinates (x l1p1) (y l1p1) (x l1p2) (y l1p2)
+				(x l2p1) (y l2p1) (x l2p2) (y l2p2)))
+
+
+(defmethod line-intersect-line-points ((l1 line)
+				       (l2p1 point) (l2p2 point))
+  "Find whether the two lines, the second expressed as 2 points intersect."
+  (lines-intersect-points (from l1) (to l1) l2p1 l2p2))
+
+(defmethod intersect ((l1 line) (l2 line))
+  "Find whether the two lines intersect."
+  (lines-intersect-vertices (from l1) (to l1) (from l2) (to l2)))

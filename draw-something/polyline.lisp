@@ -25,20 +25,26 @@
 				 :adjustable t
 				 :fill-pointer 0)
 	   :initarg :points
-	   :documentation "The points of the polyline"))
+	   :documentation "The points of the polyline")
+   (bounds :accessor bounds
+	   :type 'rectangle
+	   :initarg :bounds
+	   :initform nil
+	   :documentation "The bounds of the polyline."))
   (:documentation "A polyline or polygon. A series of joined line segments."))
 
 (defmethod append-point ((poly polyline) (pt point))
   "Append a point to the polyline."
-  (vector-push-extend pt
-		      (points poly)))
+  (vector-push-extend pt (points poly))
+  (if (not (bounds poly))
+      (setf (bounds poly) (rectangle-from-point pt))
+      (include-point (bounds poly) pt)))
 
 (defmethod make-random-polyline-in-rectangle (rect count)
   "Create a polyline with the given number of points in the given bounds."
   (let ((poly (make-instance 'polyline)))
     (dotimes (i count)
-      (append-point poly
-		    (random-point-in-rectangle rect)))
+      (append-point poly (random-point-in-rectangle rect)))
     poly))
 
 (defmethod distance ((p point) (poly polyline))
@@ -72,3 +78,55 @@
 		     (< (x highest) (x pt)))) 
 	    (setf highest pt))))
     highest))
+
+(defmethod area ((poly polyline))
+  "Get the area of the POLYGON"
+  ;; Cleanme!
+  (if (< (length (points poly)) 3)
+      0.0
+      (let ((pts (points poly))
+	    (numpts (length (points poly)))
+	    (area 0.0))
+	(dotimes (i (- numpts 1))
+	  (let ((j (mod (+ i 1) 
+			numpts)))
+	    (setf area (+ area 
+			  (* (x (aref pts i)) 
+			     (y (aref pts j)))))
+	    (setf area (- area
+			  (* (y (aref pts i))
+			     (x (aref pts j)))))))
+	(setf area (/ area 2.0))
+	(abs area))))
+
+(defmethod contains ((poly polyline) (p point))
+  "Find whether the POLYGON contains the point."
+  ;; Count ray-poly-line intersections. Odd = inside, 0 or even = outside.
+  (if (> (length (points poly)) 2)
+      (let ((pts (points poly))
+	    (numpts (length (points poly)))
+	    (ray-line (make-instance 'line 
+				     :from p 
+				     :to (translate-point 10000.0 0.0)))
+	    (crossings 0))
+	(dotimes (i (- numpts 1))
+	  (let ((j (mod (+ i 1) 
+			numpts)))
+	    (when (line-intersect-line-points ray-line 
+					      (aref pts i) 
+					      (aref pts j))
+	      (setf crossings(+ crossings 1)))))
+	(oddp crossings))))
+
+(defmethod intersects ((poly1 polyline) (poly2 polyline))
+  "Find whether the two POLYGONS intersect or contain each other."
+  (dolist (p (points poly2))
+	  (when (contains poly1 p)
+	    (return t))))
+
+(defmethod intersects ((rect rectangle) (poly polyline))
+  "Find whether the polygon intersects or contains the polyline."
+  (dolist (p (points poly))
+	  (when (contains rect p)
+	    (return t))))
+  

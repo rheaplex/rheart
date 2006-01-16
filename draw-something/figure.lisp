@@ -35,6 +35,11 @@
 	    :type polyline
 	    :initform (make-instance 'polyline)
 	    :documentation "The outlines for the skeleton.")
+   (bounds :accessor bounds
+	   :type rectangle
+	   :initform (make-instance 'rectangle)
+	   :initarg :bounds
+	   :documentation "The bounds of the figure.")
    (pen :accessor pen
 	:type turtle
 	:initarg :pen
@@ -88,7 +93,8 @@
   (let* ((skel (make-random-polyline-in-rectangle bounds num-points))
 	 (the-figure (make-instance 'figure
 				    :pen (make-figure-pen skel)
-				    :skeleton skel)))
+				    :skeleton skel
+				    :bounds (bounds skel))))
     (append-point (outline the-figure) 
 		  (location (pen the-figure)))
     the-figure))
@@ -144,8 +150,12 @@
 
 (defmethod draw-figure ((the-figure figure))
   "Find the next point forward along the drawn outline of the shape."
+  (let ((the-pen (pen the-figure))
+	(figure-bounds (bounds the-figure))
+	(the-outline (outline the-figure)))
   (loop until (should-finish the-figure)
      do (adjust-next-pen the-figure)
-       (forward (pen the-figure))
-       (append-point (outline the-figure)
-		     (location (pen the-figure)))))
+       (forward the-pen)
+       (let ((new-location (location the-pen)))
+	 (append-point the-outline new-location)
+	 (include-point figure-bounds new-location)))))

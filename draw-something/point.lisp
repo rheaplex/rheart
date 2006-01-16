@@ -41,3 +41,9 @@
   (make-instance 'point 
 		 :x (+ x (random width))
 		 :y (+ y (random height))))
+
+(defmethod translate-point ((p point) by-x by-y)
+  "Make a translated copy of the point."  
+  (make-instance 'point 
+		 :x (+ (x p) by-x)
+		 :y (+ (y p) by-y)))

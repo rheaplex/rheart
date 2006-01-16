@@ -36,3 +36,14 @@
     (if (= range 0) ;; OpenMCL's random doesn't like 0
 	a
 	(+ (random range) a))))
+
+(defmethod maybe-choose-one-of (possibilities)
+  "Choose one or none of the options."
+  (when (< (random 1.0) 0.5)
+      (nth (random (length possibilities)) possibilities)))
+
+(defmethod maybe-choose-some-of (possibilities probability)
+  "Choose none or more possibilities when random 1.0 < probability for it."
+  (loop for item in possibilities
+     when (< (random 1.0) probability)
+     collect item))

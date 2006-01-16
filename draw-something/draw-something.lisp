@@ -38,17 +38,18 @@
 
 (defmethod write-figure-fill ((fig figure) ps)
   "Write the drawing outline."
-    (write-colour (figure-colour fig) :to ps)
-    (write-new-path :to ps)
-    (write-subpath (points (outline fig)) :to ps)
-    (write-fill :to ps))
+  (write-colour (figure-colour fig) :to ps)
+  (write-new-path :to ps)
+  (write-subpath (points (outline fig)) :to ps)
+  (write-fill :to ps))
 
 (defmethod write-figure-stroke ((fig figure) ps)
   "Write the drawing outline."
-    (write-rgb 0.0 0.0 0.0 :to ps)
-    (write-new-path :to ps)
-    (write-subpath (points (outline fig)) :to ps)
-    (write-stroke :to ps))
+  (write-rgb 0.0 0.0 0.0 :to ps)
+  ;;(write-rectstroke (bounds fig) :to ps)
+  (write-new-path :to ps)
+  (write-subpath (points (outline fig)) :to ps)
+  (write-stroke :to ps))
 
 (defmethod write-figure ((fig figure) ps)
   "Write the figure for early multi-figure versions of draw-something."
