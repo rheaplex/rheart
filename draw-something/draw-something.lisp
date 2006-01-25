@@ -29,33 +29,38 @@
 	    save-directory
 	    "drawing" year month date hours minutes seconds ".eps")))
 
-(defmethod write-figure-skeleton ((fig figure) ps)
+(defmethod write-form-skeleton ((f form) ps)
   "Write the skeleton the drawing is made around."
   (write-rgb 0.4 0.4 1.0 :to ps)
   (write-new-path :to ps)
-  (write-subpath (points (skeleton fig)) :to ps)
+  (write-subpath (points (skeleton f)) :to ps)
   (write-stroke :to ps))
 
-(defmethod write-figure-fill ((fig figure) ps)
+(defmethod write-form-fill ((f form) ps)
   "Write the drawing outline."
-  (write-colour (figure-colour fig) :to ps)
+  (write-colour (fill-colour f) :to ps)
   (write-new-path :to ps)
-  (write-subpath (points (outline fig)) :to ps)
+  (write-subpath (points (outline f)) :to ps)
   (write-fill :to ps))
 
-(defmethod write-figure-stroke ((fig figure) ps)
+(defmethod write-form-stroke ((f form) ps)
   "Write the drawing outline."
   (write-rgb 0.0 0.0 0.0 :to ps)
   ;;(write-rectstroke (bounds fig) :to ps)
   (write-new-path :to ps)
-  (write-subpath (points (outline fig)) :to ps)
+  (write-subpath (points (outline f)) :to ps)
   (write-stroke :to ps))
+
+(defmethod write-form ((f form) ps)
+  "Write the form."
+  (write-form-fill f ps)
+  ;;(write-figure-skeleton fig ps)
+  (write-form-stroke f ps))
 
 (defmethod write-figure ((fig figure) ps)
   "Write the figure for early multi-figure versions of draw-something."
-  (write-figure-fill fig ps)
-  ;;(write-figure-skeleton fig ps)
-  (write-figure-stroke fig ps))
+  (loop for fm across (forms fig)
+       do (write-form fm ps)))
 
 (defmethod write-ground ((the-drawing drawing) ps)
   "Colour the drawing ground."
@@ -78,14 +83,16 @@
 		      :to ps)
     (write-ground the-drawing ps)
     (write-frame the-drawing ps)
-    (dolist (fig (figures the-drawing))
-      (write-figure fig ps))
+    (loop for fig across (figures the-drawing)
+	 do (write-figure fig ps))
     (write-eps-footer :to ps)))
 
 (defmethod draw-something ()
   "Make a drawing."
-  (let ((the-drawing (make-drawing)))
-    (draw-figures the-drawing)
+  (let* ((the-drawing (make-drawing))
+	 (coderack (make-coderack)))
+    (initialise-coderack coderack the-drawing)
+    (coderack-draw-loop coderack the-drawing)
     the-drawing))
 
 (defmethod run ()

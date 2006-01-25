@@ -47,3 +47,20 @@
   (loop for item in possibilities
      when (< (random 1.0) probability)
      collect item))
+
+(defmethod make-vector (initial-size)
+  "Make a stretchy vector."
+  (make-array initial-size
+	      :adjustable t
+	      :fill-pointer 0))
+
+
+(defmacro while (test &rest body)
+  `(do ()
+       ((not ,test))
+     ,@body))
+
+(defmacro until (test &rest body)
+  `(do ()
+       (,test)
+     ,@body))

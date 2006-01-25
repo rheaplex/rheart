@@ -1,4 +1,4 @@
-;;  draw-something.asd - The main package for draw-something
+;;  load.lisp - Load the asdf system.
 ;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
@@ -15,26 +15,5 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(require :asdf)
-
-(in-package #:asdf)
-
-(asdf:defsystem #:draw-something
-  :serial t
-  :components
-  ((:file "package")
-   (:file "utilities")
-   (:file "geometry")
-   (:file "point")
-   (:file "line")
-   (:file "rectangle")
-   (:file "polyline")
-   (:file "cell-matrix")
-   (:file "colour")
-   (:file "postscript")
-   (:file "turtle")
-   (:file "codelet")
-   (:file "form")
-   (:file "figure")
-   (:file "drawing")
-   (:file "draw-something")))
+(load "draw-something.asd")
+(asdf:operate 'asdf:load-op :draw-something)

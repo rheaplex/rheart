@@ -21,9 +21,7 @@
   ;; Optimised to use arrays not lists to avoid terrible (distance) consing
   ;; For speed set initial dimension to a size unlikely to need increasing
   ((points :accessor points
-	   :initform (make-array 1000 
-				 :adjustable t
-				 :fill-pointer 0)
+	   :initform (make-vector 1000)
 	   :initarg :points
 	   :documentation "The points of the polyline")
    (bounds :accessor bounds
@@ -69,8 +67,7 @@
 (defmethod highest-leftmost-point ((poly polyline))
   "The highest point, or highest and leftmost point (if several are highest)."
   (let* ((the-points (points poly))
-	 (highest (aref the-points 
-			0)))
+	 (highest (aref the-points 0)))
     (dotimes (i (length the-points))
       (let ((pt (aref the-points i)))
 	(if (or (> (y pt) (y highest))

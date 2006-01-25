@@ -19,22 +19,22 @@
 
 (defclass rectangle ()
   ((x :accessor x 
-      :type real
+      :type float
       :initform  0.0
       :initarg :x
       :documentation "The lower left x co-ordinate of the rectangle.")
    (y :accessor y
-      :type real
+      :type float
       :initform 0.0
       :initarg :y
       :documentation "The lower left y co-ordinate of the rectangle.")
    (width :accessor width
-      :type real
+      :type float
       :initform  0.0
       :initarg :width
       :documentation "The width of the rectangle.")
    (height :accessor height
-      :type real
+      :type float
       :initform 0.0
       :initarg :height
       :documentation "The height of the rectangle."))
@@ -118,6 +118,16 @@
        (setf (height rect) 
 	     (+ (height rect) (- (y p) top)))))))
 
+(defmethod include-rectangle ((rect rectangle) (include rectangle))
+  "Expand the first rectangle to include the second."
+  (include-point rect (make-instance 'point :x (x include) :y (y include)))
+  (include-point rect (make-instance 'point :x (x include) 
+				     :y (+ (y include) (height include))))
+  (include-point rect (make-instance 'point :x (+ (x include) (width include)) 
+				     :y (+ (y include) (height include))))
+  (include-point rect (make-instance 'point :x (+ (x include) (width include))
+				     :y (y include))))
+
 (defmethod rectangle-from-point ((p point))
-  "Make a rectangle for a point,"
-  (make-instance 'rectangle :x (x p) :y (y p) :width 0 :height 0))
+  "Make a zero-size rectangle for a point."
+  (make-instance 'rectangle :x (x p) :y (y p) :width 0.0 :height 0.0))
