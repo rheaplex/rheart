@@ -1,6 +1,6 @@
 
 ;;  run.lisp -  A toy aesthetics description and evaluation system
-;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -46,7 +46,7 @@
 (defmethod write-form-stroke ((f form) ps)
   "Write the drawing outline."
   (write-rgb 0.0 0.0 0.0 :to ps)
-  ;;(write-rectstroke (bounds fig) :to ps)
+  ;;(write-rectstroke (bounds f) :to ps)
   (write-new-path :to ps)
   (write-subpath (points (outline f)) :to ps)
   (write-stroke :to ps))
@@ -59,6 +59,9 @@
 
 (defmethod write-figure ((fig figure) ps)
   "Write the figure for early multi-figure versions of draw-something."
+  ;;(write-rgb 0.0 0.0 0.0 :to ps)
+  ;;(write-rectstroke (bounds fig) :to ps)
+  ;;(write-stroke :to ps)
   (loop for fm across (forms fig)
        do (write-form fm ps)))
 
@@ -82,17 +85,17 @@
 		      (height (bounds the-drawing))
 		      :to ps)
     (write-ground the-drawing ps)
-    (write-frame the-drawing ps)
+    ;;(write-frame the-drawing ps)
     (loop for fig across (figures the-drawing)
-	 do (write-figure fig ps))
+       do (write-figure fig ps))
     (write-eps-footer :to ps)))
 
 (defmethod draw-something ()
   "Make a drawing."
   (let* ((the-drawing (make-drawing))
-	 (coderack (make-coderack)))
-    (initialise-coderack coderack the-drawing)
-    (coderack-draw-loop coderack the-drawing)
+	 (rack (make-instance 'coderack)))
+    (initialise-coderack rack the-drawing)
+    (coderack-draw-loop rack the-drawing)
     the-drawing))
 
 (defmethod run ()

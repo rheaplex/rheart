@@ -1,5 +1,5 @@
 ;;  polyline.lisp - A classic computer graphics polyline.
-;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -25,18 +25,17 @@
 	   :initarg :points
 	   :documentation "The points of the polyline")
    (bounds :accessor bounds
-	   :type 'rectangle
+	   :type rectangle
 	   :initarg :bounds
-	   :initform nil
 	   :documentation "The bounds of the polyline."))
   (:documentation "A polyline or polygon. A series of joined line segments."))
 
 (defmethod append-point ((poly polyline) (pt point))
   "Append a point to the polyline."
   (vector-push-extend pt (points poly))
-  (if (not (bounds poly))
-      (setf (bounds poly) (rectangle-from-point pt))
-      (include-point (bounds poly) pt)))
+  (if (slot-boundp poly 'bounds)
+      (include-point (bounds poly) pt)
+      (setf (bounds poly) (rectangle-from-point pt))))
 
 (defmethod make-random-polyline-in-rectangle (rect count)
   "Create a polyline with the given number of points in the given bounds."

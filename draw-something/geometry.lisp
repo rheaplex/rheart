@@ -1,5 +1,5 @@
 ;;  geometry.lisp - Basic geometry stuff.
-;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -26,3 +26,9 @@
 (defmethod radians-to-degrees (radians)
   "Convert a value in radians to a huamn-readable value in degrees. :-)"
   (/ radians %radians-to-degrees))
+
+(defconstant radians-to-t-ratio (/ 1.0 (* pi 2.0)))
+
+(defmethod radians-to-t (r)
+	"Convert the value in radians to a value from 0.0 to 1.0"
+	(* r radians-to-t-ratio))

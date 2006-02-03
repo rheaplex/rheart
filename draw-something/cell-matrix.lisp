@@ -1,5 +1,5 @@
 ;;  cell-matrix.lisp - A picture cell matrix.
-;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -29,14 +29,10 @@
   "Convert a drawing y co-ordinate to a cell y co-ordinate."
   (floor (/ y cell-size)))
 
-(defmethod matrix-cell (cells x y)
-  "Get the cell from the matrix."
-  (aref cells (floor x) (floor y)))
-
 (defmethod make-cell-matrix (the-drawing)
   "Make the picture cell matrix for the drawing"
-  (let ((matrix-width (/ (width (bounds the-drawing)) cell-size))
-	(matrix-height (/ (height (bounds the-drawing)) cell-size)))
+  (let ((matrix-width (ceiling (/ (width (bounds the-drawing)) cell-size)))
+	(matrix-height (ceiling (/ (height (bounds the-drawing)) cell-size))))
     (setf (cell-matrix the-drawing) 
 	  (make-array (list matrix-height matrix-width)))
     (dotimes (i matrix-height)
@@ -75,7 +71,7 @@
 
 (defmethod mark-figure-cell (cells x y fig)
   "Set the cell to the figure. x and y are in cell co-ordinates."
-  (setf (matrix-cell cells x y) fig))
+  (setf (aref cells x y) fig))
 
 (defmethod mark-polyline-outline-cells (cells polyline fig)
   "Mark the cells that the polyline passes through."
@@ -92,18 +88,18 @@
 		 (dotimes (i (- numpts 1))
 		   (let ((p1 (aref pts i))
 			 (p2 (aref pts (mod (1+ i) numpts))))
-		     (apply-bresenham-points fun 
-					     (drawing-to-cell-x (x p1))
-					     (drawing-to-cell-y (y p1))
-					     (drawing-to-cell-x (x p2))
-					     (drawing-to-cell-y (y p2))))))))))
+		     (apply-line fun 
+				 (drawing-to-cell-x (x p1))
+				 (drawing-to-cell-y (y p1))
+				 (drawing-to-cell-x (x p2))
+				 (drawing-to-cell-y (y p2))))))))))
 
 (defmethod scanline-intersections (cells fig x width y)
   "Find where the scanline intersects the outline."
   (let ((intersections (make-vector 4)))
     (do ((i x (1+ i)))
 	((> i (+ x width)))
-      (when (equal (matrix-cell cells (+ x i) y) fig)
+      (when (equal (aref cells (+ x i) y) fig)
 	(vector-push-extend intersections i)))
     intersections))
 
@@ -114,7 +110,7 @@
     (do ((i 0 (+ i 2)))
 	((> i (length intersections)))
     (apply-line (lambda (x y) (mark-figure-cell cells x y fig))
-		(nth0 intersections i) y (nth0 intersections (+ i 1)) y))))
+		(nth intersections i) y (nth intersections (+ i 1)) y))))
   
 (defmethod mark-polyline-fill-cells (cells poly fig)
   "Flood fill inside the figure."
@@ -129,13 +125,3 @@
 							 poly-x
 							 poly-width
 							 i)))))
-								 
-(defmethod mark-form-cells (cells fm fig)
-  "Mark the cells belonging to the form"
-  (mark-polyline-outline-cells cells cells (outline fm) fig)
-  (mark-polyline-fill-cells cells (outline fm) fig))
-
-(defmethod mark-figure-cells (cells fig)
-  "Mark the cells belonging to the figure."
-  (dolist (fm (forms fig))
-    (mark-form-cells cells fm fig)))

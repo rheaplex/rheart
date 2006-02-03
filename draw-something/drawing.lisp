@@ -1,5 +1,5 @@
 ;;  drawing.lisp - Drawing around shapes.
-;;  Copyright (C) 2004-5  Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -19,9 +19,6 @@
 
 (defconstant min-drawing-size 200.0)
 (defconstant max-drawing-size 600.0)
-
-(defconstant min-figures 1)
-(defconstant max-figures 2)
 
 (defclass drawing ()
   ((bounds :accessor bounds
@@ -48,6 +45,8 @@
 	   :documentation "The flat body colour of the figure."))
    (:documentation "A drawing in progress."))
 
+;; Change to width or height being max and other being random range
+
 (defmethod make-drawing-bounds ()
   "Make a bounds rectangle for a drawing."
   (make-instance 'rectangle :x 0.0 :y 0.0
@@ -60,7 +59,7 @@
   "Make a drawing, ready to be started."
   (let ((the-drawing (make-instance 'drawing 
 				    :bounds (make-drawing-bounds))))
-    ;;(make-cell-matrix the-drawing)
+    (make-cell-matrix the-drawing)
     (format t "Drawing. Size: ~dx~d.~%" 
 	    (floor (width (bounds the-drawing)))
 	    (floor (height (bounds the-drawing))))
@@ -71,10 +70,12 @@
 ;; Skeleton will ultimately be a list of objects
 
 (defmethod draw-figure ((the-drawing drawing) (the-figure figure))
-  (let ((figure-bounds (bounds the-figure))
-	(the-forms (forms the-figure)))
+  (let ((the-forms (forms the-figure)))
     (dotimes (i (length the-forms))
       (draw-form (aref the-forms i))
-      (include-rectangle figure-bounds (bounds (aref the-forms i)))))
-      ;;(mark-figure-cells fig the-drawing)
-      )
+      (if (slot-boundp the-figure 'bounds)
+	  (include-rectangle (bounds the-figure) (bounds (aref the-forms i)))
+	  (setf (bounds the-figure)
+		(copy-rectangle (bounds (aref the-forms 0)))))))
+;;  (mark-figure-cells the-figure (cell-matrix the-drawing))
+)

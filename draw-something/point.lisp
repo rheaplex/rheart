@@ -1,5 +1,5 @@
 ;;  point.lisp - A 2D point.
-;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -36,6 +36,20 @@
   (sqrt (+ (expt (- (x right) (x left)) 2)
 	   (expt (- (y right) (y left)) 2))))
 
+(defmethod distance-point-co-ordinates ((left point) x2 y2)
+  "The distance between two points."
+  (sqrt (+ (expt (- x2 (x left)) 2)
+	   (expt (- y2 (y left)) 2))))
+
+(defmethod distance-to-closest-point ((p1 point) &rest points)
+  "Get the distance to the point closest to p1"
+  (let ((dist nil))
+    (dolist (p points)
+      (let ((new-dist (distance p1 p)))
+	(if (or (not dist) (< new-dist dist))
+	    (setq dist new-dist))))
+    dist))
+
 (defmethod random-point-in-bounds (x y width height)
   "Make a point placed randomly within the given bounds."
   (make-instance 'point 
@@ -47,3 +61,46 @@
   (make-instance 'point 
 		 :x (+ (x p) by-x)
 		 :y (+ (y p) by-y)))
+
+(defmethod co-ordinates-at-angle-around-point-co-ordinates (a b r theta)
+  "Get the point on the circumference of the circle at theta."
+  (values (+ a (* r (cos theta)))
+	    (+ b (* r (sin theta)))))
+
+(defmethod co-ordinates-at-angle (obj theta)
+  "Get the point on the circumference of the arc/circle at theta. 
+   Doesn't check limits of arc."
+  (co-ordinates-at-angle-around-point-co-ordinates (x obj) (y obj) (radius obj)
+						   theta))
+	
+(defmethod angle-between-two-points-co-ordinates (x1 y1 x2 y2)
+  "Calculate the angle of the second point around the first."
+  (let ((dx (- x2 x1))
+	(dy (- y2 y1)))
+    (cond
+      ((= dx 0.0)
+       (cond
+	 ((= dx 0.0) 0.0)
+	 ((> dy 0.0) (/ pi 2.0))
+	 (t (* pi 2.0 3.0))))
+      ((= dy 0.0)
+       (cond
+	 ((> dx 0.0) 0.0)
+	 (t pi)))
+      (t
+       (cond
+	 ((< dx 0.0) (+ (atan (/ dy dx)) pi))
+	 ((< dy 0.0) (+ (atan (/ dy dx)) (* pi 2)))
+	 (t (atan (/ dy dx))))))))
+					
+(defmethod angle-between-two-points ((p1 point) (p2 point))
+  "Calculate the angle of the second point around the first."
+  (angle-between-two-points-co-ordinates (x p1) (y p1) (x p2) (y p2)))
+
+(defmethod highest-leftmost-of ((p1 point) (p2 point))
+  "Compare and return the highest leftmost point."
+  (if (or (> (y p1) (y p2))
+	  (and (= (y p1) (y p2))
+	       (< (x p1) (x p2)))) 
+      p1  
+    p2))

@@ -36,8 +36,9 @@
 	  :initform (make-hash-table)
 	  :documentation "Any notes recorded on the form by codelets.")
    (skeleton :accessor skeleton 
-	     :type polyline
+	     :type vector
 	     :initarg :skeleton
+	     :initform (make-vector 5)
 	     :documentation "The guide shape for the outline.")
    (outline :accessor outline
 	    :type polyline
@@ -73,15 +74,22 @@
 	(- (point-count the-form) 
 	   1))) 
 
-(defmethod make-form-start-point ((form-skeleton polyline))
+(defmethod make-form-start-point ((form-skeleton vector))
   "Get the point to start drawing at."
-  (let ((start-point (highest-leftmost-point form-skeleton)))
-    (make-instance 'point 
-		   :x (x start-point)
-		   :y (+ (y start-point) 
-			 pen-distance))))
+  (let ((start-point nil))
+    (dovector (skel form-skeleton)
+      (let* ((hp (highest-leftmost-point skel))
+	     (candidate (make-instance 'point 
+				       :x (x hp)
+				       :y (+ (y hp) pen-distance))))
+	(when (or (not start-point)
+		  (> (y candidate) (y start-point))
+		  (and (= (y candidate) (y start-point))
+		       (< (x candidate) (x start-point))))
+	  (setf start-point candidate))))
+    start-point))
 
-(defmethod make-form-pen ((form-skeleton polyline))
+(defmethod make-form-pen ((form-skeleton vector))
   "Make the pen to draw around the form."
   (make-instance 'turtle 
 		 :location (make-form-start-point form-skeleton)
@@ -93,7 +101,7 @@
   (advisory-message (format nil "Form: ~d points.~%" num-points))
   (let* ((skel (make-random-polyline-in-rectangle bounds num-points))
 	 (the-form (make-instance 'form
-				    :skeleton skel
+				    :skeleton (vector skel)
 				    :bounds (bounds skel))))
     the-form))
 
@@ -108,15 +116,20 @@
   (> (point-count the-form)
      form-step-limit))
 
-(defmethod should-finish ((the-form form) (the-pen turtle))
-  "Decide if the form should finish."
+(defmethod should-finish-form ((the-form form) (the-pen turtle))
+  "Decide whether the form should finish."
   (or (path-ready-to-close the-form the-pen)
       (path-timeout the-form)))
 
 (defmethod next-pen-distance ((the-form form) (the-pen turtle))
   "How far the pen will be from the guide shape when it next moves forwards."
-  (distance (next-point the-pen) 
-	    (skeleton the-form)))
+  (let ((dist 999999.0)
+	(p (next-point the-pen)))
+    (dovector (skel (skeleton the-form))
+      (let ((new-dist (distance p skel)))
+	(when (< new-dist dist)
+	  (setf dist new-dist))))
+    dist))
 
 (defmethod next-pen-too-close ((the-form form) (the-pen turtle))
   "Will the pen move to be too close from the guide shape next time?"
@@ -151,9 +164,14 @@
 	 (the-outline (outline the-form))
 	 (the-pen (make-form-pen (skeleton the-form))))
     (append-point (outline the-form) (location the-pen))
-    (loop until (should-finish the-form the-pen)
+    (loop until (should-finish-form the-form the-pen)
        do (adjust-next-pen the-form the-pen)
 	 (forward the-pen)
 	 (let ((new-location (location the-pen)))
 	   (append-point the-outline new-location)
 	   (include-point form-bounds new-location)))))
+
+(defmethod mark-form-cells (cells fm fig)
+  "Mark the cells belonging to the form"
+  (mark-polyline-outline-cells cells (outline fm) fig)
+  (mark-polyline-fill-cells cells (outline fm) fig))

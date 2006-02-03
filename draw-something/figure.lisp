@@ -1,5 +1,5 @@
 ;;  figure.lisp - A drawn figure.
-;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -17,8 +17,11 @@
 
 (in-package "DRAW-SOMETHING")
 
+(defconstant min-figures 1)
+(defconstant max-figures 8)
+
 (defconstant min-forms 1)
-(defconstant max-forms 2)
+(defconstant max-forms 6)
 
 (defclass figure ()
   ((notes :accessor notes
@@ -31,20 +34,25 @@
 	  :documentation "The forms of the figure.")
    (bounds :accessor bounds
 	   :type rectangle
-	   :initform (make-instance 'rectangle)
 	   :initarg :bounds
 	   :documentation "The bounds of the figure."))
   (:documentation "A figure drawn in the drawing."))
 
 (defmethod make-figure (the-drawing)
   "Naive figure making method. Replace with many codelets."
-  (let ((fig (make-instance 'figure)))
+  (let ((fig (make-instance 'figure))
+	(figure-bounds (random-rectangle-in-rectangle (bounds the-drawing))))
     (dotimes (i (random-range min-forms max-forms))
-      (vector-push-extend (make-form (bounds the-drawing)
+      (vector-push-extend (make-form figure-bounds
 				     (random-range 1 max-form-points))
 			  (forms fig)))
     (vector-push-extend fig (figures the-drawing))
     fig))
+
+(defmethod mark-figure-cells ((fig figure) cells)
+  "Mark the cells belonging to the figure."
+  (dovector (fm (forms fig))
+    (mark-form-cells cells fm fig)))
 
 
 

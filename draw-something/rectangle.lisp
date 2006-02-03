@@ -1,5 +1,5 @@
 ;;  rectangle.lisp - A 2D rectangle.
-;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -39,6 +39,11 @@
       :initarg :height
       :documentation "The height of the rectangle."))
   (:documentation "A simple rectangle"))
+
+(defmethod copy-rectangle ((r rectangle))
+  "Make a copy of the rectangle."
+  (make-instance 'rectangle 
+		 :x (x r) :y (y r) :width (width r) :height (height r)))
 
 (defmethod random-point-in-rectangle ((bounds-rect rectangle))
   "Make a point placed randomly within the given bounding rectangle."

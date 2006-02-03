@@ -1,5 +1,5 @@
 ;;  utilities.lisp - Various utilities.
-;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -64,3 +64,7 @@
   `(do ()
        (,test)
      ,@body))
+
+(defmacro dovector ((var vec) &rest body)
+  `(loop for ,var across ,vec
+      do (progn ,@body)))

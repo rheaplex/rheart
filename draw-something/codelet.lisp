@@ -1,5 +1,5 @@
-;;  codelet.lisp - Codelets and coderack
-;;  Copyright (C) 2004  Rhea Myers rhea@myers.studio
+;;  codelet.lisp - Codelets and the coderack.
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
@@ -31,16 +31,6 @@
 (defconstant maximum-number-of-codelets 100)
 (defconstant number-of-ticks-per-pruning 10)
 
-(defconstant drawing-is-finished nil)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defvar *draw-something-continue* t)
-
-(defmethod draw-something-should-finish ()
-  "Tell draw-soemthing that it should finish drawing."
-  (setf *draw-something-continue* nil))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defclass codelet ()
@@ -65,82 +55,90 @@
 	    :documentation "The urgency of the codelet.")
    (created :accessor created
 	    :type integer
-	    :initform *codelet-ticks*
+	    :initarg :created
 	    :documentation "The creation time of the codelet."))
   (:documentation "A codelet."))
 
+(defclass coderack ()
+  ((codelets :accessor codelets
+	     :type vector
+	     :initform (make-vector maximum-number-of-codelets)
+	     :documentation "The codelets.")
+   (time :accessor codelet-ticks
+	 :type integer
+	 :initform 0
+	 :documentation "The number of ticks (run loop cycles) that have run.")
+   (should-continue :accessor should-continue
+		    :initform t
+		    :documentation "Whether the codelrt loop should continue."))
+  (:documentation "The coderack."))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar *codelet-ticks* 0)
+(defmethod should-finish-running ((rack coderack))
+  (setf (should-continue rack) nil))
 
-(defmethod advance-codelet-ticks ()
-  "Move on the codelet time."
-  (incf *codelet-ticks*))
+(defmethod advance-codelet-ticks ((rack coderack))
+  (incf (codelet-ticks rack)))
 
-(defmethod should-prune-codelets ()
+(defmethod should-prune-codelets ((rack coderack))
   "Check whether it's time to prune again."
-  (mod *codelet-ticks* number-of-ticks-per-pruning))
+  (mod (codelet-ticks rack) number-of-ticks-per-pruning))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmethod make-coderack ()
-  (make-vector 100))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmethod add-codelet-to-coderack (coderack (c codelet))
+(defmethod add-codelet-to-coderack ((c codelet) (rack coderack))
   "Add the codelet to the list."
-  (vector-push-extend c coderack))
+  (format t "Adding: ~a~%" (string-downcase (string (action c))))
+  (vector-push-extend c (codelets rack)))
 
-(defmethod add-codelet (coderack action urgency category &rest arguments)
+(defmethod add-codelet ((rack coderack) action urgency category &rest arguments)
   "Make and add the codelet to the list."
-  (add-codelet-to-coderack coderack
-			   (make-instance 'codelet
+  (add-codelet-to-coderack (make-instance 'codelet
 					  :action action
 					  :arguments arguments
 					  :category category
-					  :urgency urgency)))
+					  :urgency urgency
+					  :created (codelet-ticks rack))
+			   rack))
 
-(defmethod remove-codelet (coderack i)
+(defmethod remove-codelet ((rack coderack) i)
   "Remove the codelet from the vector, filling the resulting hole."
-  (if (< i (1- (fill-pointer coderack)))
-      (setf (aref coderack i) 
-	    (aref coderack (1- (fill-pointer coderack)))))
-  (decf (fill-pointer coderack)))
+  (if (< i (1- (fill-pointer (codelets rack))))
+      (setf (aref (codelets rack) i) 
+	    (aref (codelets rack) (1- (fill-pointer (codelets rack))))))
+  (decf (fill-pointer (codelets rack))))
 
-(defmethod remove-codelets-matching (coderack predicate)
+(defmethod remove-codelets-matching ((rack coderack) predicate)
   "Remove all codelets that predicate returns t for."
-  (loop for i from 0 to (length coderack)
-       when (apply predicate (aref coderack i))
-       do (remove-codelet i)))
+  (loop for i from 0 to (length rack)
+       when (apply predicate (aref rack i))
+       do (remove-codelet rack i)))
 
-(defmethod codelet-should-run ((c codelet))
+(defmethod codelet-should-run ((rack coderack) (c codelet))
   "Probabilistically decide whether the codelet should run."
   t) ;; todo
 
-
 (defmethod run-codelet ((c codelet))
   "Run the codelet."
-  (format t "Running: ~a~%" (action c))
+  (format t "Running: ~a~%" (string-downcase (string (action c))))
   (apply #'funcall (action c) (arguments c)))
 
-(defmethod run-one-codelet (coderack)
+(defmethod run-one-codelet ((rack coderack))
   "Run one codelet."
-  ;; Make sure we run one?
-  (dotimes (i (length coderack))
-    (let ((candidate (aref coderack i)))
-      (when (codelet-should-run candidate)
+  ;; Make sure we run exactly one?
+  (dotimes (i (length (codelets rack)))
+    (let ((candidate (aref (codelets rack) i)))
+      (when (codelet-should-run rack candidate)
 	(run-codelet candidate) 
-	(remove-codelet coderack i)
+	(remove-codelet rack i)
 	(return)))))
 
 (defmethod random-urgency ()
   "A random urgency."
   (random-range minimum-urgency maximum-urgency))
 
-(defmethod codelet-age ((c codelet))
+(defmethod codelet-age ((c codelet) (rack coderack))
   "The age of the codelet."
-  (- *codelet-ticks* (created c)))
+  (- (codelet-ticks rack) (created c)))
 
 (defmethod should-remove-codelet ((c codelet))
   "Should the codelet be removed? Weighted random choice."
@@ -148,16 +146,18 @@
      (/ (urgency c)
 	(codelet-age c))))
 
-(defmethod prune-codelets (coderack)
+(defmethod prune-codelets ((rack coderack))
   "Randomly remove codelets that are too old and low priority."
   (let ((to-remove (make-vector 10)))
-    (dotimes (i (length coderack))
-	(when (should-remove-codelet (aref coderack i))
-	  (vector-push-extend i to-remove)))
+    (dotimes (i (length (codelets rack)))
+      (let ((c (aref (codelets rack) i)))
+	(when (should-remove-codelet c)
+	  (format t "Removing: ~a~%" (string-downcase (string (action c))))
+	  (vector-push-extend i to-remove))))
     (dolist (remove to-remove)
-      (remove-codelet coderack remove))))
+      (remove-codelet rack remove))))
   
-(defmethod initialise-coderack (coderack the-drawing)
+(defmethod initialise-coderack ((rack coderack) the-drawing)
   "Populate the coderack with the initial codelets."
   ;; Randomly add n. codelets
   ;; Ones that locate various sizes of wide/tall/equalish space
@@ -166,46 +166,65 @@
   ;; Which spawn drawing codelets
   ;; Which then call finish
   ;; this is just deterministic, go probabilistic for 0.5
-  (dotimes (i (random-range 5 20))
-    (add-figure-making-codelet coderack the-drawing)))
+ ;; (dotimes (i (random-range min-figures max-figures))
+    (add-figure-making-codelet rack the-drawing));;)
 
-(defmethod draw-loop-step (coderack the-drawing)
+(defmethod draw-loop-step ((rack coderack) the-drawing)
   "One step of the loop"
+  (declare (ignore the-drawing))
   ;;(when (should-prune-codelets)
   ;;  (prune-coderack coderack))
   ;;add new codelets from figures & from ongoing list to add
-  (run-one-codelet coderack))
+  (run-one-codelet rack))
 
-(defmethod coderack-draw-loop (coderack the-drawing)
+(defmethod coderack-draw-loop ((rack coderack) the-drawing)
   "Run until complete."
-  (setf *draw-something-continue* t) ;; Make sure value is reset in REPL
-  (setf *codelet-ticks* 0) ;; Make sure value is reset in REPL
-  (format t "~a~%" *draw-something-continue*)
-  (loop while *draw-something-continue* 
-     do (draw-loop-step coderack the-drawing)))
+  (loop while (should-continue rack)
+     do (draw-loop-step rack the-drawing)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Specific codelets
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod figure-making-codelet (coderack the-drawing)
-  "Replace with space finder, form-adder, etc."
-  (add-figure-drawing-codelet coderack the-drawing (make-figure the-drawing)))
+(defmethod make-arc-form ((bounds rectangle) (num-points integer))
+  "Make a form, ready to be started."
+  (advisory-message (format nil "Form: ~d points.~%" num-points))
+  (let* ((skel (make-instance 'arc :x 100.0 :y 100.0 :radius 50.0 
+			      :from pi :to (* pi 2.0)))
+	 (the-form (make-instance 'form
+				    :skeleton (vector skel)
+				    :bounds (bounds skel))))
+    the-form))
 
-(defmethod add-figure-making-codelet (coderack the-drawing)
+(defmethod make-arc-figure (the-drawing)
+  "Naive figure making method. Replace with many codelets."
+  (let ((fig (make-instance 'figure))
+	(figure-bounds (random-rectangle-in-rectangle (bounds the-drawing))))
+    (dotimes (i (random-range min-forms max-forms))
+      (vector-push-extend (make-arc-form figure-bounds
+				     (random-range 1 max-form-points))
+			  (forms fig)))
+    (vector-push-extend fig (figures the-drawing))
+    fig))
+
+(defmethod figure-making-codelet ((rack coderack) the-drawing)
+  "Replace with space finder, form-adder, etc."
+  (add-figure-drawing-codelet rack the-drawing (make-figure the-drawing)))
+
+(defmethod add-figure-making-codelet ((rack coderack) the-drawing)
   "Add a codelet to make the figure."
-  (add-codelet coderack 'figure-making-codelet 100 'drawing coderack 
+  (add-codelet rack 'figure-making-codelet 100 'drawing rack 
 	       the-drawing))
 
-(defmethod figure-drawing-codelet (coderack the-drawing fig)
+(defmethod figure-drawing-codelet ((rack coderack) the-drawing fig)
   "Draw the figure. Replace with various."
   (draw-figure the-drawing fig)
-  (when (= (length coderack) 1)
-    (draw-something-should-finish)))
+  (when (= (length (codelets rack)) 1)
+    (should-finish-running rack)))
 
-(defmethod add-figure-drawing-codelet (coderack the-drawing fig)
+(defmethod add-figure-drawing-codelet ((rack coderack) the-drawing fig)
   "Add a codelet to draw the figure."
-  (add-codelet coderack 'figure-drawing-codelet 100 'drawing coderack 
+  (add-codelet rack 'figure-drawing-codelet 100 'drawing rack 
 	       the-drawing fig))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

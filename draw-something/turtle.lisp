@@ -1,5 +1,5 @@
 ;;  turtle.lisp - A classic, L-system style computer graphics turtle.
-;;  Copyright (C) 2004-5  Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
 ;;  it under the terms of the GNU General Public License as published by
