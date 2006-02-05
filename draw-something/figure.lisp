@@ -38,7 +38,7 @@
 	   :documentation "The bounds of the figure."))
   (:documentation "A figure drawn in the drawing."))
 
-(defmethod make-figure (the-drawing)
+(defmethod make-figure ((the-drawing drawing))
   "Naive figure making method. Replace with many codelets."
   (let ((fig (make-instance 'figure))
 	(figure-bounds (random-rectangle-in-rectangle (bounds the-drawing))))

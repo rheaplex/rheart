@@ -166,9 +166,9 @@
   ;; Which spawn drawing codelets
   ;; Which then call finish
   ;; this is just deterministic, go probabilistic for 0.5
- ;; (dotimes (i (random-range min-figures max-figures))
-    (add-figure-making-codelet rack the-drawing));;)
-
+  (dotimes (i (random-range min-figures max-figures))
+    (add-figure-making-codelet rack the-drawing)))
+  
 (defmethod draw-loop-step ((rack coderack) the-drawing)
   "One step of the loop"
   (declare (ignore the-drawing))
@@ -186,35 +186,13 @@
 ;; Specific codelets
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod make-arc-form ((bounds rectangle) (num-points integer))
-  "Make a form, ready to be started."
-  (advisory-message (format nil "Form: ~d points.~%" num-points))
-  (let* ((skel (make-instance 'arc :x 100.0 :y 100.0 :radius 50.0 
-			      :from pi :to (* pi 2.0)))
-	 (the-form (make-instance 'form
-				    :skeleton (vector skel)
-				    :bounds (bounds skel))))
-    the-form))
-
-(defmethod make-arc-figure (the-drawing)
-  "Naive figure making method. Replace with many codelets."
-  (let ((fig (make-instance 'figure))
-	(figure-bounds (random-rectangle-in-rectangle (bounds the-drawing))))
-    (dotimes (i (random-range min-forms max-forms))
-      (vector-push-extend (make-arc-form figure-bounds
-				     (random-range 1 max-form-points))
-			  (forms fig)))
-    (vector-push-extend fig (figures the-drawing))
-    fig))
-
 (defmethod figure-making-codelet ((rack coderack) the-drawing)
   "Replace with space finder, form-adder, etc."
   (add-figure-drawing-codelet rack the-drawing (make-figure the-drawing)))
 
 (defmethod add-figure-making-codelet ((rack coderack) the-drawing)
   "Add a codelet to make the figure."
-  (add-codelet rack 'figure-making-codelet 100 'drawing rack 
-	       the-drawing))
+  (add-codelet rack 'figure-making-codelet 100 'drawing rack the-drawing))
 
 (defmethod figure-drawing-codelet ((rack coderack) the-drawing fig)
   "Draw the figure. Replace with various."

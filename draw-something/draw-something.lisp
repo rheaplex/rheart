@@ -106,5 +106,5 @@
   (let ((filename (generate-filename)))
     (write-drawing filename
 		   (draw-something))
-  (advisory-message "Finished draw-something.~%")
-#+openmcl (ccl::os-command (format nil "open ~a" filename))))
+    (advisory-message "Finished draw-something.~%")
+    #+openmcl (ccl::os-command (format nil "open ~a" filename))))
