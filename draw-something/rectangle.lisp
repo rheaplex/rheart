@@ -71,6 +71,34 @@
 		   :width new-width
 		   :height new-height)))
 
+(defmethod random-rectangle-in-rectangle-size (in new-width new-height)
+  "Make a random rectangle of the given size in the given bounds."
+  (assert (<= new-width (width in)))
+  (assert (<= new-height (height in)))
+  (let ((new-x (+ (x in)
+		  (random-number (- (width in) new-width))))
+	(new-y (+ (y in)
+		  (random-number (- (height in) new-height)))))
+    (make-instance 'rectangle
+		   :x new-x
+		   :y new-y
+		   :width new-width
+		   :height new-height)))
+  
+(defmethod random-rectangle-in-rectangle ((bounds-rect rectangle))
+  "Make a random rectangle of at least size 1x1 in another rectangle."
+  (let* ((new-width (random (width bounds-rect)))
+	 (new-height (random (height bounds-rect)))
+	 (new-x (+ (x bounds-rect)
+		   (random (- (width bounds-rect) new-width))))
+	 (new-y (+ (y bounds-rect)
+		   (random (- (height bounds-rect) new-height)))))
+    (make-instance 'rectangle
+		   :x new-x
+		   :y new-y
+		   :width new-width
+		   :height new-height)))
+
 (defmethod inset-rectangle ((source rectangle) (offset real))
   "Trim a rectangle by the given amount."
   (make-instance 'rectangle

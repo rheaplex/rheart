@@ -96,13 +96,14 @@
 		 :turn-step pen-turn-step
 		 :move-step pen-forward-step))
 
-(defmethod make-form ((bounds rectangle) (num-points integer))
+(defmethod make-form ((form-bounds rectangle) (num-points integer))
   "Make a form, ready to be started."
-  (advisory-message (format nil "Form: ~d points.~%" num-points))
-  (let* ((skel (make-random-polyline-in-rectangle bounds num-points))
+  (advisory-message (format nil "  Form: ~d points.~%" num-points))
+  (let* ((skel (make-random-polyline-in-rectangle form-bounds num-points))
 	 (the-form (make-instance 'form
 				    :skeleton (vector skel)
 				    :bounds (bounds skel))))
+    (draw-form the-form) ;; Remove for codelets?
     the-form))
 
 (defmethod path-ready-to-close ((the-form form) (the-pen turtle))
@@ -165,13 +166,14 @@
 	 (the-pen (make-form-pen (skeleton the-form))))
     (append-point (outline the-form) (location the-pen))
     (loop until (should-finish-form the-form the-pen)
-       do (adjust-next-pen the-form the-pen)
-	 (forward the-pen)
-	 (let ((new-location (location the-pen)))
-	   (append-point the-outline new-location)
-	   (include-point form-bounds new-location)))))
+       do (progn (adjust-next-pen the-form the-pen)
+		 (forward the-pen)
+		 (let ((new-location (location the-pen)))
+		   (append-point the-outline new-location)
+		   (include-point form-bounds new-location))))))
 
-(defmethod mark-form-cells (cells fm fig)
+#|(defmethod mark-form-cells (cells fm fig)
   "Mark the cells belonging to the form"
   (mark-polyline-outline-cells cells (outline fm) fig)
   (mark-polyline-fill-cells cells (outline fm) fig))
+|#

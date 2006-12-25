@@ -50,11 +50,19 @@
 	    (setq dist new-dist))))
     dist))
 
+(defun random-co-ordinates (x-range y-range)
+  "Make random co-ordinates avoiding bell-curve point distribution."
+  ;; Yay bignum!
+  (floor (random (+ x-range y-range))
+	 x-range))
+
 (defmethod random-point-in-bounds (x y width height)
   "Make a point placed randomly within the given bounds."
-  (make-instance 'point 
-		 :x (+ x (random width))
-		 :y (+ y (random height))))
+  (multiple-value-bind
+	(x-dist y-dist) (random-co-ordinates width height)
+    (make-instance 'point 
+		   :x (+ x x-dist)
+		   :y (+ y y-dist))))
 
 (defmethod translate-point ((p point) by-x by-y)
   "Make a translated copy of the point."  

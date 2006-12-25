@@ -1,4 +1,4 @@
-;;  drawing.lisp - Drawing around shapes.
+;;  drawing.lisp - A drawing.
 ;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;;  This program is free software; you can redistribute it and/or modify
@@ -19,6 +19,9 @@
 
 (defconstant min-drawing-size 200.0)
 (defconstant max-drawing-size 600.0)
+
+(defconstant min-figures 3)
+(defconstant max-figures 9)
 
 (defclass drawing ()
   ((bounds :accessor bounds
@@ -42,7 +45,7 @@
 	   :type colour
 	   :initarg :ground
 	   :initform (random-colour)
-	   :documentation "The flat body colour of the figure."))
+	   :documentation "The flat background colour of the drawing."))
    (:documentation "A drawing in progress."))
 
 ;; Change to width or height being max and other being random range
@@ -55,6 +58,43 @@
 		 :height (random-range min-drawing-size 
 				       max-drawing-size)))
 
+(defmethod add-figure ((the-drawing drawing) fig)
+  "Add the figure to the drawing."
+    (vector-push-extend fig (figures the-drawing)))
+
+;; Make these account for pen width, distance and tolerance.
+;; Hmm. Skeletons for some will be drawn before outlines for others,
+;; this embodies planning but not feedback.
+
+(defmethod make-figure-for-layer ((figure-bounds rectangle) (layer integer))
+  (let* ((form-width (/ (width figure-bounds) layer))
+	 (form-height (/ (height figure-bounds) layer)))
+    (make-figure figure-bounds form-width form-height)))
+	 
+(defmethod make-figures ((the-drawing drawing))
+  "Make the figures for the drawing."
+  (let ((figure-count (random-range-inclusive min-figures max-figures)))
+    (advisory-message (format nil "Making ~a figures.~%" 
+			      figure-count))
+    (loop for i from 1 to figure-count
+      do (advisory-message (format nil "Making figure ~a/~a.~%" i
+				   figure-count))
+      do (add-figure the-drawing
+		     (make-figure-for-layer (bounds the-drawing) i)))))
+
+(defmethod make-drawing ()
+  "Make a drawing, ready to be started."
+  (let ((the-drawing (make-instance 'drawing 
+				    :bounds (make-drawing-bounds))))
+    ;;(make-cell-matrix the-drawing)
+    (format t "Drawing. Size: ~dx~d.~%" 
+	    (floor (width (bounds the-drawing)))
+	    (floor (height (bounds the-drawing))))
+    (make-figures the-drawing)
+    the-drawing))
+
+#|
+
 (defmethod make-drawing ()
   "Make a drawing, ready to be started."
   (let ((the-drawing (make-instance 'drawing 
@@ -64,18 +104,23 @@
 	    (floor (width (bounds the-drawing)))
 	    (floor (height (bounds the-drawing))))
     the-drawing))
+
+(defmethod draw-figures ((the-drawing drawing))
+  "Draw each figure. We'll add a callback system to make this better."
+  (advisory-message "Drawing figure outlines:")
+  (let ((i 0)) ;; Just for the advisory message
+    (dolist (fig (figures the-drawing))
+      (advisory-message (format nil " ~a" (+ i 1)))
+      (setf i (+ i 1))
+      (draw-figure fig)
+      ;;(mark-figure-cells fig the-drawing)
+      ))
+  (advisory-message ".~%"))
   
 ;; Configure pen for each figure (pos, reset heading)
 ;; Vary distance & tolerance & pen width for each figure?
+;; AARON varies...
 ;; Skeleton will ultimately be a list of objects
 
-(defmethod draw-figure ((the-drawing drawing) (the-figure figure))
-  (let ((the-forms (forms the-figure)))
-    (dotimes (i (length the-forms))
-      (draw-form (aref the-forms i))
-      (if (slot-boundp the-figure 'bounds)
-	  (include-rectangle (bounds the-figure) (bounds (aref the-forms i)))
-	  (setf (bounds the-figure)
-		(copy-rectangle (bounds (aref the-forms 0)))))))
-;;  (mark-figure-cells the-figure (cell-matrix the-drawing))
-)
+|#
+

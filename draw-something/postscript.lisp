@@ -87,5 +87,68 @@
   (format to "~F ~F ~F ~F rectstroke~%" (x rect) (y rect) (width rect) 
 	  (height rect)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Drawing writing
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defmethod write-form-skeleton ((f form) ps)
+  "Write the skeleton the drawing is made around."
+  (write-rgb 0.4 0.4 1.0 :to ps)
+  (write-new-path :to ps)
+  (write-subpath (points (skeleton f)) :to ps)
+  (write-stroke :to ps))
 
+(defmethod write-form-fill ((f form) ps)
+  "Write the drawing outline."
+  (write-colour (fill-colour f) :to ps)
+  (write-new-path :to ps)
+  (write-subpath (points (outline f)) :to ps)
+  (write-fill :to ps))
+
+(defmethod write-form-stroke ((f form) ps)
+  "Write the drawing outline."
+  (write-rgb 0.0 0.0 0.0 :to ps)
+  ;;(write-rectstroke (bounds f) :to ps)
+  (write-new-path :to ps)
+  (write-subpath (points (outline f)) :to ps)
+  (write-stroke :to ps))
+
+(defmethod write-form ((f form) ps)
+  "Write the form."
+  (write-form-fill f ps)
+  ;;(write-figure-skeleton fig ps)
+  ;;(write-form-stroke f ps)
+  )
+
+(defmethod write-figure ((fig figure) ps)
+  "Write the figure for early multi-figure versions of draw-something."
+  ;;(write-rgb 0.0 0.0 0.0 :to ps)
+  ;;(write-rectstroke (bounds fig) :to ps)
+  ;;(write-stroke :to ps)
+  (loop for fm across (forms fig)
+       do (write-form fm ps)))
+
+(defmethod write-ground ((the-drawing drawing) ps)
+  "Colour the drawing ground."
+  (write-colour (ground the-drawing) :to ps)
+  (write-rectfill (bounds the-drawing) :to ps))
+
+(defmethod write-frame ((the-drawing drawing) ps)
+  "Frame the drawing. Frame is bigger than PS bounds but should be OK."
+  (write-rectstroke (inset-rectangle (bounds the-drawing) -1)
+		    :to ps))
+
+(defmethod write-drawing ((name string) (the-drawing drawing))
+  "Write the drawing"
+  (advisory-message (format nil "Writing drawing to file ~a .~%" name))
+  (ensure-directories-exist save-directory)
+  (with-open-file (ps name :direction :output
+		      :if-exists :supersede)
+    (write-eps-header (width (bounds the-drawing))
+		      (height (bounds the-drawing))
+		      :to ps)
+    (write-ground the-drawing ps)
+    ;;(write-frame the-drawing ps)
+    (loop for fig across (figures the-drawing)
+       do (write-figure fig ps))
+    (write-eps-footer :to ps)))

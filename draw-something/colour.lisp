@@ -58,38 +58,3 @@
 	  ((3) (values-list (list p q (brightness col)))) ;; Cyan
 	  ((4) (values-list (list tt p (brightness col)))) ;; Blue
 	  ((5) (values-list (list (brightness col) p q))))))) ;; Magenta
-
-(defmethod difference ((a colour) (b colour))
-  "Decide how different two colours are. 0 .. approx 2.1"
-  (+ (* (abs (- (hue a) 
-		(hue b)))
-	0.00028)
-     (abs (- (saturation a) 
-	     (saturation b)))
-     (abs (- (brightness a) 
-	     (brightness b)))))
-
-#|(defmethod different-value ((target float) (separation float) (wrap float))
-  "Make a value 0 .. wrap where value is < or > target +/- separation."
-  (cond 
-    ;; Range is from 0 .. target - separation
-    ((> (+ target separation)
-	wrap)
-     (random (- target separation)))
-    ;; Range is from target + separation .. wrap
-    ((< (- target separation)
-	0.0)
-     (+ target 
-	separation 
-	(random (- wrap 
-		   target 
-		   separation))))
-    ;; Range is either of the above
-    (t
-     ((mod (+ (+ target 
-		 separation) 
-	      (random (- wrap 
-			 (* 2.0 
-			    separation))))
-      wrap)))))|#
-

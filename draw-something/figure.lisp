@@ -17,17 +17,14 @@
 
 (in-package "DRAW-SOMETHING")
 
-(defconstant min-figures 1)
-(defconstant max-figures 8)
-
-(defconstant min-forms 1)
-(defconstant max-forms 6)
+(defconstant min-forms 5)
+(defconstant max-forms 10)
 
 (defclass figure ()
   ((notes :accessor notes
 	  :type hashtable
 	  :initform (make-hash-table)
-	  :documentation "Any notes recodred by codelets on the figure.")
+	  :documentation "Any notes recorded by codelets on the figure.")
    (forms :accessor forms
 	  :type vector
 	  :initform (make-vector 5)
@@ -38,15 +35,16 @@
 	   :documentation "The bounds of the figure."))
   (:documentation "A figure drawn in the drawing."))
 
-(defmethod make-figure ((the-drawing drawing))
+(defmethod make-figure ((potential-bounds rectangle) forms-width forms-height)
   "Naive figure making method. Replace with many codelets."
-  (let ((fig (make-instance 'figure))
-	(figure-bounds (random-rectangle-in-rectangle (bounds the-drawing))))
-    (dotimes (i (random-range min-forms max-forms))
-      (vector-push-extend (make-form figure-bounds
+  (let ((fig (make-instance 'figure)))
+    (dotimes (i (random-range-inclusive min-forms max-forms))
+      (vector-push-extend (make-form (random-rectangle-in-rectangle-size
+				      potential-bounds
+				      forms-width
+				      forms-height)
 				     (random-range 1 max-form-points))
 			  (forms fig)))
-    (vector-push-extend fig (figures the-drawing))
     fig))
 
 (defmethod mark-figure-cells ((fig figure) cells)
