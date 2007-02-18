@@ -61,8 +61,8 @@
 	 (applier (make-colour-scheme-applier scheme sv-spec-list))
 	 (cell (make-instance 'rectangle :x 0 :y 0
 			      :width cell-size :height cell-size)))
-    (print-colour-scheme scheme)
     (format t "sv-spec: ~a~%" sv-spec-list)
+    (print-colour-scheme scheme)
     (format t "Colouring forms.~%")
     (dotimes (cell-y up)
       (setf (x cell) 0)
