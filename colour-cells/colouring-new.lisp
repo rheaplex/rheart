@@ -15,6 +15,10 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
+;; Acronyms:
+;; lmh = low, medium, high
+;; sv = saturation, value
+
 (in-package "COLOUR-CELLS")
 
 (defconstant minimum-spec-probability 3)
@@ -133,16 +137,16 @@
   (format t "values:~%")
   (print-lmh (colour-scheme-values scheme)))
 
-(defmethod colour-scheme-hue-for (scheme hue-id)
+(defmethod symbol-colour-scheme-hue (scheme hue-id)
   "Get the hue value from the scheme for a given id, eg :stem, :stalk."
   (gethash hue-id (colour-scheme-hues scheme)))
 
-(defmethod colour-scheme-saturation-lmh (scheme spec)
+(defmethod random-colour-scheme-saturation (scheme spec)
   "Choose a saturation from the range specified by spec."
   (random-lmh-value (colour-scheme-saturations scheme)
 		    spec))
 
-(defmethod colour-scheme-value-lmh (scheme spec)
+(defmethod random-colour-scheme-value (scheme spec)
   "Choose a value from the range specified by spec."
   (random-lmh-value (colour-scheme-values scheme)
 		    spec))
@@ -163,20 +167,19 @@
 (defmethod make-colour-by-sv-spec (scheme hue-id sv-spec)
   "Choose a colour for the hue id using the sv-spec eg 'lm, 'hh, 'ml."
   (multiple-value-bind 
-	(saturation-spec value-spec) (sv-spec-components sv-spec)
+	(saturationspec valuespec) (sv-spec-components sv-spec)
     (make-instance 'colour 
-		   :hue (colour-scheme-hue-for scheme hue-id)
-		   :saturation (colour-scheme-saturation-lmh scheme
-							     saturation-spec)
-		   :brightness (colour-scheme-value-lmh scheme
-							value-spec))))
+		   :hue (symbol-colour-scheme-hue scheme hue-id)
+		   :saturation (random-colour-scheme-saturation scheme
+								saturationspec)
+		   :brightness (random-colour-scheme-value scheme
+							   valuespec))))
 
 ;; Generate additive colour range
 
 (defmethod make-hue-additive-series (hue-list)
   (let ((series (make-hash-table))
 	(hue-value (random 1.0)))
-    ;; Use loop? Can that gather into a hashtable?
     (dolist (hue-symbol hue-list)
       (setf hue-value (mod (+ hue-value (random 0.3))
 			   1.0))
@@ -211,16 +214,19 @@
    ;; This one is more part of the scheme but is more convenient here
    (sv-chooser :initarg :sv-chooser
 	       :initform (lambda () 'll)
-	       :accessor applier-sv-chooser)
+	       :accessor applier-sv-chooser
+	       :documentation "The function to choose sv values.")
    (sv-probabilites :type hash-table
 		    :initform (make-hash-table)
 		    :initarg :sv-probabilities
-		    :accessor applier-probabilities)
+		    :accessor applier-probabilities
+		    :documentation "The probabilities of the chooser sv specs")
    (sv-occurrences :type hash-table
 		   :initform (make-hash-table)
-		   :accessor applier-occurences))
+		   :accessor applier-occurences
+		   :documentation "How often each sv spec has been chosen."))
   (:documentation
-    "The data used in applying a colour scheme to an image."))
+   "The data used in applying a colour scheme to an image."))
 
 (defmethod set-applier-probabilities (applier spec-list)
   "Set the probabilites from a list of num/specs, and set occurences to zero"
@@ -267,7 +273,6 @@
   "Find the spec that is being called the least compared to its probability."
   (let ((highest 0.0)
 	(result nil))
-    ;; Change to use loop
     (maphash #'(lambda (key val)
 		 (declare (ignore val))
 		 (let ((difference (spec-probability-difference applier key)))
@@ -309,8 +314,6 @@
 	 (choice (make-colour-by-sv-spec (applier-scheme applier)
 					 hue-id spec)))
     (update-applier-state applier spec)
-    ;;(format t "colour: ~,3F ~,3F ~,3F~%"
-	;;    (hue choice) (saturation choice) (brightness choice))
     choice))
 
 
