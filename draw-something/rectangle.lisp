@@ -15,7 +15,7 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(in-package "DRAW-SOMETHING")
+;;(in-package "DRAW-SOMETHING")
 
 (defclass rectangle ()
   ((x :accessor x 
@@ -53,9 +53,8 @@
 
 (defmethod random-points-in-rectangle ((bounds-rect rectangle) count)
   "Create the specified number of points placed randomly within the given rectangle."
-  (let ((points (make-vector count)))
-    (map-into (random-point-in-rectangle bounds-rect) points)
-    points))
+  (map-into (make-vector count)
+	    (lambda ()(random-point-in-rectangle bounds-rect))))
 
 (defmethod random-rectangle-in-rectangle ((bounds-rect rectangle))
   "Make a random rectangle of at least size 1x1 in another rectangle."
@@ -124,6 +123,14 @@
   "Find whether the rectangle contains the point."
   (contains-point-co-ordinates rect (x p) (y p)))
 
+(defmethod points-in-rectangle ((rect rectangle) (points vector))
+  "Get the vector of points within the rectangle"
+  (let ((contained (vector 1)))
+    (loop for p across points
+	  when (contains rect p)
+	  do (vector-push-extend contained p))
+    contained))
+
 (defmethod intersects ((rect1 rectangle) (rect2 rectangle))
   "Find whether the rectangles intersect."
   (and (< (x rect1) (+ (x rect2) (width rect2)))
@@ -164,3 +171,68 @@
 (defmethod rectangle-from-point ((p point))
   "Make a zero-size rectangle for a point."
   (make-instance 'rectangle :x (x p) :y (y p) :width 0.0 :height 0.0))
+
+(defmethod random-point-on-rectangle ((r rectangle))
+  "Make a random point somewhere on the border of a rectangle."
+  (case (random 4)
+    (0 (random-point-on-line
+	(make-instance 'line
+		       :from (make-instance 'point
+					    :x (x r)
+					    :y (y r))
+		       :to (make-instance 'point
+					  :x (x r)
+					  :y (+ (y r)
+						(height r))))))
+    (1 (random-point-on-line
+	(make-instance 'line
+		       :from (make-instance 'point
+					  :x (x r)
+					  :y (+ (y r)
+						(height r)))
+		       :to (make-instance 'point
+					  :x (+ (x r)
+						(width r))
+					  :y (+ (y r)
+						(height r))))))
+    (2 (random-point-on-line
+	(make-instance 'line
+		       :from (make-instance 'point
+					  :x (+ (x r)
+						(width r))
+					  :y (+ (y r)
+						(height r)))
+		       :to (make-instance 'point
+					  :x (+ (x r)
+						(width r))
+					  :y (y r)))))
+    (3 (random-point-on-line
+	(make-instance 'line
+		       :from (make-instance 'point
+					    :x (+ (x r)
+						(width r))
+					    :y (y r))
+		       :to (make-instance 'point
+					  :x (x r)
+					  :y (y r)))))))
+		       
+(defmethod random-points-on-rectangle ((r rectangle) count)
+  "Generate count points on a rectangle's outline. These will not be ordered."
+  (map-into (make-vector count) (lambda () (random-point-on-rectangle r))))
+
+(defmethod random-points-at-rectangle-corners ((r rectangle) count) 
+  "Return from 0 to 4 corner points of a rectangle, clamping out-of-range."
+  ;; Inefficient but easy to code and easy to read ;-]
+  (choose-n-of count
+	       (vector (make-instance 'point 
+				      :x (x r) 
+				      :y (y r))
+		       (make-instance 'point 
+				      :x (x r) 
+				      :y (+ (y r) (height r)))
+		       (make-instance 'point 
+				      :x (+ (x r) (width r)) 
+				      :y (+ (y r) (height r)))
+		       (make-instance 'point 
+				      :x (+ (x r) (width r)) 
+				      :y (y r)))))

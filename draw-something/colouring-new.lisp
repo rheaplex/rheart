@@ -15,7 +15,11 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(in-package "DRAW-SOMETHING")
+;; Acronyms:
+;; lmh = low, medium, high
+;; sv = saturation, value
+
+;;(in-package "COLOUR-CELLS")
 
 (defconstant minimum-spec-probability 3)
 (defconstant maximum-spec-probability 9)
@@ -26,75 +30,51 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; LMH - Low medium and high value ranges from 0.0..1.0
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+  
 (defclass lmh-values ()
-  ((medium-start :type real
-		 :initarg :medium 
-		 :initform 0.33
-		 :accessor medium-value-start)
-   (high-start :type real
-	       :initarg :high 
-	       :initform 0.33
-	       :accessor high-value-start)
-   (lows :type vector 
+  ((lows :type vector 
 	 :initform (make-vector 7)
+	 :initarg :lows
 	 :accessor low-values)
    (mediums :type vector 
 	    :initform (make-vector 7)
+	    :initarg :mediums
 	    :accessor medium-values)
    (highs :type vector 
 	  :initform (make-vector 7)
+	  :initarg :highs
 	  :accessor high-values))
   (:documentation 
     "A range of values divided into low, medium and high values."))
 
-(defmethod insert-lmh-low-value (lmh val)
-  "Append a value to the list of low values in the lmh, unsorted."
-  (vector-push-extend val (low-values lmh)))
+(defun make-random-low-values (count medium-start)
+  "Generate count random low values."
+  (map-into (make-vector count)
+	    (lambda () (random-range 0.0 medium-start))))
 
-(defmethod insert-lmh-medium-value (lmh val)
-  "Append a value to the list of medium values in the lmh, unsorted."
-  (vector-push-extend val (medium-values lmh)))
+(defun make-random-medium-values (count medium-start high-start)
+  "Generate count random medium values."
+  (map-into (make-vector count)
+	    (lambda () (random-range medium-start high-start))))
 
-(defmethod insert-lmh-high-value (lmh val)
-  "Append a value to the list of medium values in the lmh, unsorted."
-  (vector-push-extend val (high-values lmh)))
+(defun make-random-high-values (count high-start)
+  "Generate count random high values."
+  (map-into (make-vector count)
+	    (lambda () (random-range high-start 1.0))))
 
-(defmethod insert-lmh-value (lmh val)
-  "Insert the value into the correct range list for the lmh."
-  (cond 
-   ((< val (medium-value-start lmh))
-    (insert-lmh-low-value lmh val))
-   ((< val (high-value-start lmh))
-    (insert-lmh-medium-value lmh val))
-   (t
-    (insert-lmh-high-value lmh val))))
-  
-(defmethod insert-lmh-values (lmh values)
-  "Insert a list of values into the correct range lists of the lmh."
-  (dolist (value (sort values #'<))
-   (insert-lmh-value lmh value)))
-
-;; Ensure minimum separation for each value (read notes)?
-
-(defmethod populate-lmh (lmh count)
-  "Generate count values and insert them into the lmh."
-  (assert (>= count 3))
-  (insert-lmh-values lmh
-		     (loop for i from 0 below count collect (random 1.0)))
-  (if (or (eq (length (low-values lmh)) 0)
-	  (eq (length (medium-values lmh)) 0)
-	  (eq (length (high-values lmh)) 0))
-      (populate-lmh lmh count)))
-
-(defmethod make-lmh (count medium high)
-  "Make the lmh and populate it with count values separated by medium & high."
-  (let ((lmh (make-instance 'lmh-values
-			       :medium medium
-			       :high high)))
-    (populate-lmh lmh 
-		  count)
-    lmh))
+(defmethod make-lmh (count medium-start high-start)
+  "Make an lmh."
+  (let* ((low-count (random-range 1 (- count 2)))
+	 (medium-count (random-range 1 (- count low-count 1)))
+	 (high-count (- count medium-count low-count)))
+    (make-instance 'lmh-values
+		   :lows (make-random-low-values low-count
+						 medium-start)
+		   :mediums (make-random-medium-values medium-count
+						       medium-start
+						       high-start)
+		   :highs (make-random-high-values high-count
+						   high-start))))
 
 (defmethod random-low-value ((lmh lmh-values))
   "Randomly choose a value from the list of low values of the lmh."
@@ -132,7 +112,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defclass colour-scheme ()
-  ((hues :type hashtable
+  ((hues :type hash-table
 	 :initarg :hues
 	 :initform (make-hash-table)
 	 :accessor colour-scheme-hues)
@@ -157,16 +137,16 @@
   (format t "values:~%")
   (print-lmh (colour-scheme-values scheme)))
 
-(defmethod colour-scheme-hue-for (scheme hue-id)
+(defmethod symbol-colour-scheme-hue (scheme hue-id)
   "Get the hue value from the scheme for a given id, eg :stem, :stalk."
   (gethash hue-id (colour-scheme-hues scheme)))
 
-(defmethod colour-scheme-saturation-lmh (scheme spec)
+(defmethod random-colour-scheme-saturation (scheme spec)
   "Choose a saturation from the range specified by spec."
   (random-lmh-value (colour-scheme-saturations scheme)
 		    spec))
 
-(defmethod colour-scheme-value-lmh (scheme spec)
+(defmethod random-colour-scheme-value (scheme spec)
   "Choose a value from the range specified by spec."
   (random-lmh-value (colour-scheme-values scheme)
 		    spec))
@@ -187,22 +167,21 @@
 (defmethod make-colour-by-sv-spec (scheme hue-id sv-spec)
   "Choose a colour for the hue id using the sv-spec eg 'lm, 'hh, 'ml."
   (multiple-value-bind 
-	(saturation-spec value-spec) (sv-spec-components sv-spec)
+	(saturationspec valuespec) (sv-spec-components sv-spec)
     (make-instance 'colour 
-		   :hue (colour-scheme-hue-for scheme hue-id)
-		   :saturation (colour-scheme-saturation-lmh scheme
-							     saturation-spec)
-		   :brightness (colour-scheme-value-lmh scheme
-							value-spec))))
+		   :hue (symbol-colour-scheme-hue scheme hue-id)
+		   :saturation (random-colour-scheme-saturation scheme
+								saturationspec)
+		   :brightness (random-colour-scheme-value scheme
+							   valuespec))))
 
 ;; Generate additive colour range
 
 (defmethod make-hue-additive-series (hue-list)
   (let ((series (make-hash-table))
 	(hue-value (random 1.0)))
-    ;; Use loop? Can that gather into a hashtable?
     (dolist (hue-symbol hue-list)
-      (setf hue-value (mod (+ hue-value (random 0.3)) 
+      (setf hue-value (mod (+ hue-value (random 0.3))
 			   1.0))
       (setf (gethash hue-symbol series)
 	    hue-value))
@@ -225,24 +204,29 @@
 	   :initarg :scheme)
    (count :type integer
 	  :initform 1
-	  :accessor applier-count)
+	  :accessor applier-count
+	  :documentation "How many objects this applier haas coloured.")
    (check :type integer
 	  :initform 5
 	  :initarg :check
-	  :accessor applier-when-to-check)
+	  :accessor applier-when-to-check
+	  :documentation "How often to check deviation.")
    ;; This one is more part of the scheme but is more convenient here
    (sv-chooser :initarg :sv-chooser
 	       :initform (lambda () 'll)
-	       :accessor applier-sv-chooser)
-   (sv-probabilites :type hashtable
+	       :accessor applier-sv-chooser
+	       :documentation "The function to choose sv values.")
+   (sv-probabilites :type hash-table
 		    :initform (make-hash-table)
 		    :initarg :sv-probabilities
-		    :accessor applier-probabilities)
-   (sv-occurrunces :type hashtable
+		    :accessor applier-probabilities
+		    :documentation "The probabilities of the chooser sv specs")
+   (sv-occurrences :type hash-table
 		   :initform (make-hash-table)
-		   :accessor applier-occurences))
+		   :accessor applier-occurences
+		   :documentation "How often each sv spec has been chosen."))
   (:documentation
-    "The data used in applying a colour scheme to an image."))
+   "The data used in applying a colour scheme to an image."))
 
 (defmethod set-applier-probabilities (applier spec-list)
   "Set the probabilites from a list of num/specs, and set occurences to zero"
@@ -289,7 +273,6 @@
   "Find the spec that is being called the least compared to its probability."
   (let ((highest 0.0)
 	(result nil))
-    ;; Change to use loop
     (maphash #'(lambda (key val)
 		 (declare (ignore val))
 		 (let ((difference (spec-probability-difference applier key)))
@@ -331,8 +314,6 @@
 	 (choice (make-colour-by-sv-spec (applier-scheme applier)
 					 hue-id spec)))
     (update-applier-state applier spec)
-    (format t "colour: ~,3F ~,3F ~,3F~%"
-	    (hue choice) (saturation choice) (brightness choice))
     choice))
 
 
@@ -359,8 +340,10 @@
     (setf (ground drawing) 
 	  (choose-colour-for applier
 			     'background))
-    (loop for figure across (figures drawing)
-	  do (loop for form across (forms figure)
-		   do (setf (fill-colour form) 
-			    (choose-colour-for applier
-					       (object-symbol form)))))))
+    (loop for plane across (planes drawing)
+	  do (loop for figure across (figures plane)
+		   do (loop for form across (forms figure)
+			    do (setf (fill-colour form)
+				     (choose-colour-for
+				      applier
+				      (object-symbol form))))))))

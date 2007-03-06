@@ -15,7 +15,7 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(in-package "DRAW-SOMETHING")
+;;(in-package "DRAW-SOMETHING")
 
 
 (defconstant min-form-points 1)
@@ -31,11 +31,7 @@
 (defconstant form-step-limit 5000)
 
 (defclass form ()
-  ((notes :accessor notes
-	  :type hashtable
-	  :initform (make-hash-table)
-	  :documentation "Any notes recorded on the form by codelets.")
-   (skeleton :accessor skeleton 
+  ((skeleton :accessor skeleton 
 	     :type vector
 	     :initarg :skeleton
 	     :initform (make-vector 5)
@@ -96,10 +92,10 @@
 		 :turn-step pen-turn-step
 		 :move-step pen-forward-step))
 
-(defmethod make-form ((form-bounds rectangle) (num-points integer))
+(defmethod make-form-from-points ((points vector))
   "Make a form, ready to be started."
-  (advisory-message (format nil "  Form: ~d points.~%" num-points))
-  (let* ((skel (make-random-polyline-in-rectangle form-bounds num-points))
+  (advisory-message (format nil "  Form.~%"))
+  (let* ((skel (make-polyline-from-points points))
 	 (the-form (make-instance 'form
 				    :skeleton (vector skel)
 				    :bounds (bounds skel))))
@@ -171,9 +167,3 @@
 		 (let ((new-location (location the-pen)))
 		   (append-point the-outline new-location)
 		   (include-point form-bounds new-location))))))
-
-#|(defmethod mark-form-cells (cells fm fig)
-  "Mark the cells belonging to the form"
-  (mark-polyline-outline-cells cells (outline fm) fig)
-  (mark-polyline-fill-cells cells (outline fm) fig))
-|#

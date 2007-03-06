@@ -15,7 +15,7 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(in-package "DRAW-SOMETHING")
+;;(in-package "DRAW-SOMETHING")
 
 (defclass point ()
   ((x :accessor x 
@@ -112,3 +112,44 @@
 	       (< (x p1) (x p2)))) 
       p1  
     p2))
+
+(defmethod highest-leftmost-point (the-points)
+  "The highest point, or highest and leftmost point (if several are highest)."
+  (let ((highest (aref the-points 0)))
+    (dotimes (i (length the-points))
+      (let ((pt (aref the-points i)))
+	(setf highest (highest-leftmost-of pt highest))))
+    highest))
+
+(defmethod point-line-side (p0 p2 p1)
+  "Find out which side of an infinite line through p1 and p2 that p0 lies on.
+   < 0 = left, > 0 = right, == 0 = exactly on."
+ (- (* (- (x p1) (x p0)) (- (y p2) (y p0)))
+    (* (- (x p2) (x p0)) (- (y p1) (y p0)))))
+
+(defmethod furthest-point (p points)
+  "Return the point that is furthest from p"
+  (let ((candidate nil)
+	(candidate-distance -1.0))
+    (loop for pp across points
+	  do (let ((ppd (distance p pp)))
+	       (when (> ppd candidate-distance)
+		 (setf candidate pp)
+		 (setf candidate-distance ppd))))
+    candidate))
+
+(defmethod all-points-leftp (p q the-points)
+  "Are all points to the left of or colinear with pq?"
+  (loop for pp across the-points
+	when (> (point-line-side pp p q) 0)
+	do (return nil)
+	finally (return t)))
+
+(defmethod point-with-all-left (p points)
+  "Return the point q that all other points lie to the left of the line pq.
+   In the case of colinear points, returns the furthest point."
+  (let ((candidates (make-vector 10)))
+    (loop for candidate across points
+	  when (all-points-leftp p candidate points)
+	  do (vector-push-extend candidate candidates))
+    (furthest-point p candidates)))

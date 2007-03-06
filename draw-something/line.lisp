@@ -15,7 +15,7 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(in-package "DRAW-SOMETHING")
+;;(in-package "DRAW-SOMETHING")
 
 (defclass line ()
   ((from :accessor from
@@ -127,3 +127,20 @@
 (defmethod intersect ((l1 line) (l2 line))
   "Find whether the two lines intersect."
   (lines-intersect-vertices (from l1) (to l1) (from l2) (to l2)))
+
+(defmethod line-at-t ((l line) (time real))
+  "Evaluate the line at t where 0<=t<=1 ."
+  (make-instance 'point
+		 :x (* time (- (x (to l))
+			    (x (from l))))
+		 :y (* time (- (y (to l))
+			    (y (from l))))))
+
+(defmethod random-point-on-line ((l line))
+  "Generate a random point on a line"
+  (line-at-t l (random 1.0)))
+
+(defmethod random-points-on-line ((l line) (count integer))
+  "Generate count points on line. These will not be in order."
+  (loop for i below count
+	collect (random-point-on-line l)))

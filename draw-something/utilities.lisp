@@ -15,7 +15,7 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(in-package "DRAW-SOMETHING")
+;;(in-package "DRAW-SOMETHING")
 
 (defmethod debug-message (msg)
   "Write the message to the error stream, not to standard output."
@@ -29,6 +29,26 @@
   (format *debug-io* 
 	  msg)
   (finish-output *debug-io*))
+
+(defmethod make-vector (initial-size)
+  "Make a stretchy vector."
+  (make-array initial-size
+	      :adjustable t
+	      :fill-pointer 0))
+
+(defmacro while (test &rest body)
+  `(do ()
+       ((not ,test))
+     ,@body))
+
+(defmacro until (test &rest body)
+  `(do ()
+       (,test)
+     ,@body))
+
+(defmacro dovector ((var vec) &rest body)
+  `(loop for ,var across ,vec
+      do (progn ,@body)))
 
 (defmethod dequote (item)
   "Remove the quote from a symbol, returning the symbol."
@@ -73,7 +93,7 @@
      when (< (random 1.0) probability)
      collect item))
 
-(defun choose-n-of (n choice-list)
+(defmethod choose-n-of ((n integer) (choice-list list))
   "Choose n different entries from choice-list."
   (assert (<= n (length choice-list)))
   (let ((choices choice-list)
@@ -84,6 +104,25 @@
 	(setf choices (remove choice choices))))
     chosen))
 
+(defmethod choose-n-of ((n integer) (choice-vector vector))
+  "Choose n different entries from choice-vector."
+  (assert (<= n (length choice-vector)))
+  (let ((choices choice-vector)
+	(chosen (make-vector n)))
+    (dotimes (i n)
+      (let ((choice (choose-one-of choices)))
+	(vector-push-extend choice chosen)
+	(setf choices (remove choice choices))))
+    chosen))
+
+(defun choose-n-of-ordered (n choice-list)
+  "Choose n of the entries, and ensure they are in order."
+  ;; Not very efficient at all
+  (let ((choices (choose-n-of n choice-list)))
+    (loop for i in choice-list
+	   when (member i choices)
+	   collect i)))
+  
 (defun prefs-range (spec)
   "Get the total probability range of a prefs spec."
   (loop for prob in spec by #'cddr
@@ -114,22 +153,8 @@
   "Make a lambda to choose an option. eg (prefs-list-lambda '(4 'a 3 'b))"
    (eval `(lambda () ,(prefs-cond spec))))
 
-(defmethod make-vector (initial-size)
-  "Make a stretchy vector."
-  (make-array initial-size
-	      :adjustable t
-	      :fill-pointer 0))
+(defconstant normal-to-255-multiplier (/ 1.0 256))
 
-(defmacro while (test &rest body)
-  `(do ()
-       ((not ,test))
-     ,@body))
-
-(defmacro until (test &rest body)
-  `(do ()
-       (,test)
-     ,@body))
-
-(defmacro dovector ((var vec) &rest body)
-  `(loop for ,var across ,vec
-      do (progn ,@body)))
+(defmethod normal-to-255 (normal)
+  "Convert a 0..1 value to a 0..255 value."
+  (* normal normal-to-255-multiplier))

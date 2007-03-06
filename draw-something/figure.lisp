@@ -15,19 +15,16 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(in-package "DRAW-SOMETHING")
+;;(in-package "DRAW-SOMETHING")
 
 (defconstant min-forms 5)
 (defconstant max-forms 10)
 
 (defclass figure ()
-  ((notes :accessor notes
-	  :type hashtable
-	  :initform (make-hash-table)
-	  :documentation "Any notes recorded by codelets on the figure.")
-   (forms :accessor forms
+  ((forms :accessor forms
 	  :type vector
 	  :initform (make-vector 5)
+	  :initarg :forms
 	  :documentation "The forms of the figure.")
    (bounds :accessor bounds
 	   :type rectangle
@@ -35,22 +32,15 @@
 	   :documentation "The bounds of the figure."))
   (:documentation "A figure drawn in the drawing."))
 
-(defmethod make-figure ((potential-bounds rectangle) forms-width forms-height)
-  "Naive figure making method. Replace with many codelets."
+(defmethod make-figure-from-points ((points vector))
+  "Make a figure with a single polyline from the provided points."
   (let ((fig (make-instance 'figure)))
-    (dotimes (i (random-range-inclusive min-forms max-forms))
-      (vector-push-extend (make-form (random-rectangle-in-rectangle-size
-				      potential-bounds
-				      forms-width
-				      forms-height)
-				     (random-range 1 max-form-points))
-			  (forms fig)))
+    (vector-push-extend (make-form-from-points points)
+			(forms fig))
     fig))
 
-(defmethod mark-figure-cells ((fig figure) cells)
-  "Mark the cells belonging to the figure."
-  (dovector (fm (forms fig))
-    (mark-form-cells cells fm fig)))
-
-
+(defmethod draw-figure ((fig figure))
+  "Draw the forms of a figure."
+  (loop for form across (forms fig)
+	do (draw-form form)))
 

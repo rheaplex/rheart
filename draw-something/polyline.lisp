@@ -15,7 +15,7 @@
 ;;  along with this program; if not, write to the Free Software
 ;;  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
-(in-package "DRAW-SOMETHING")
+;;(in-package "DRAW-SOMETHING")
 
 (defclass polyline ()
   ;; Optimised to use arrays not lists to avoid terrible (distance) consing
@@ -44,6 +44,13 @@
       (append-point poly (random-point-in-rectangle rect)))
     poly))
 
+(defmethod make-polyline-from-points ((points vector))
+  "Create a polyline with the given points."
+  (let ((poly (make-instance 'polyline)))
+    (loop for p across points
+      do (append-point poly p))
+    poly))
+	
 (defmethod distance ((p point) (poly polyline))
   "The distance from a point to a polyline."
   (cond ((= (length (points poly)) 0)
@@ -125,4 +132,17 @@
   (dolist (p (points poly))
 	  (when (contains rect p)
 	    (return t))))
-  
+
+(defmethod convex-hull (the-points)
+  "Get the convex hull of an array of points."
+  (let* ((first-point (highest-leftmost-point the-points))
+	 (current-point first-point)
+	 (next-point nil)
+	 (hull (vector first-point)))
+    (loop until (and (not (eq next-point nil))
+		     (eq next-point first-point))
+	  do (setf next-point 
+		   (point-with-all-left current-point the-points))
+	  (vector-push-extend next-point hull)
+	  (setf current-point next-point))
+    (make-instance 'polyline :points hull)))
