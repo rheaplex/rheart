@@ -127,7 +127,7 @@
 
 (defmethod intersect ((l1 line) (l2 line))
   "Find whether the two lines intersect."
-  (lines-intersect-vertices (from l1) (to l1) (from l2) (to l2)))
+  (lines-intersect-points (from l1) (to l1) (from l2) (to l2)))
 
 (defmethod line-at-t ((l line) (time real))
   "Evaluate the line at t where 0<=t<=1 ."

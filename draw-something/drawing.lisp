@@ -57,7 +57,18 @@
   "Make a drawing, ready to be started."
   (let ((the-drawing (make-instance 'drawing 
 				    :bounds (make-drawing-bounds))))
-    (format t "Drawing. Size: ~dx~d.~%" 
+    (format t "Making drawing. Size: ~dx~d.~%" 
 	    (floor (width (bounds the-drawing)))
 	    (floor (height (bounds the-drawing))))
     the-drawing))
+
+(defparameter save-directory "../draw-something-drawings/")
+
+(defmethod generate-filename (&optional (suffix ".eps"))
+  "Make a unique filename for the drawing, based on the current date & time."
+  (multiple-value-bind (seconds minutes hours date month year)
+      (decode-universal-time (get-universal-time))
+    (format nil
+            "~a~a-~2,,,'0@A~2,,,'0@A~2,,,'0@A-~2,,,'0@A~2,,,'0@A~2,,,'0@A~a"
+            save-directory
+            "drawing" year month date hours minutes seconds suffix)))

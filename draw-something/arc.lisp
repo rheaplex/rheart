@@ -42,6 +42,12 @@
    (finish-point :accessor finish-point))
   (:documentation "A simple circle."))
 
+(defmethod arc-point-at-angle ((obj arc) theta)
+  "Get the point on the circumference of the arc at theta. 
+   Doesn't check limits of arc."
+  (multiple-value-bind (ax ay) (co-ordinates-at-angle obj theta)
+      (make-instance 'point :x ax :y ay)))
+
 (defmethod initialize-instance :after ((instance arc) &rest args)
   "Make the from- and to- points from their angles."
   (declare (ignore args))
@@ -64,16 +70,10 @@
   (let ((theta (angle-between-two-points-co-ordinates (x p) (y p) (x a) (y a))))
     (if (and (> theta (start-angle a)) (< theta (finish-angle a)))
 	(abs (- (distance-point-co-ordinates p (x a) (y a)) (radius a)))
-	(distance-to-closest-point p (start-point a) (finish-point a)))))
+	(distance-point-line p (start-point a) (finish-point a)))))
 
 (defmethod bounds ((a arc))
   "The bounds of the arc."
   (make-instance 'rectangle :x 0.0 :y 0.0 :width 100.0 :height 100.0)) 
-
-(defmethod arc-point-at-angle ((obj arc) theta)
-  "Get the point on the circumference of the arc at theta. 
-   Doesn't check limits of arc."
-  (multiple-value-bind (ax ay) (co-ordinates-at-angle obj theta)
-      (make-instance 'point :x ax :y ay)))
 
 ;; Do point-to-angle && fit-curve-to-3-points

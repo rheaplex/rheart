@@ -2,17 +2,17 @@
 ;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;; This file is part of draw-something.
-;; 
+;;
 ;; draw-something is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 3 of the License, or
 ;; (at your option) any later version.
-;; 
+;;
 ;; draw-something is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -20,22 +20,22 @@
 
 (defmethod debug-message (msg)
   "Write the message to the error stream, not to standard output."
-  (format *debug-io* 
-	  "~A~%" 
-	  msg)
+  (format *debug-io*
+          "~A~%"
+          msg)
   (finish-output *debug-io*))
 
 (defmethod advisory-message (msg)
   "Write the message to the error stream, not to standard output. No newline."
-  (format *debug-io* 
-	  msg)
+  (format *debug-io*
+          msg)
   (finish-output *debug-io*))
 
 (defmethod make-vector (initial-size)
   "Make a stretchy vector."
   (make-array initial-size
-	      :adjustable t
-	      :fill-pointer 0))
+              :adjustable t
+              :fill-pointer 0))
 
 (defmacro while (test &rest body)
   `(do ()
@@ -65,15 +65,15 @@
   "Make a random number from a to below b."
   (let ((range (- b a)))
     (if (= range 0)
-	a
-	(+ (random range) a))))
+        a
+        (+ (random range) a))))
 
 (defmethod random-range-inclusive ((a integer) (b integer))
   "Make a random number from a to below b."
   (let ((range (+ (- b a) 1)))
     (if (= range 0)
-	a
-	(+ (random range) a))))
+        a
+        (+ (random range) a))))
 
 (defmethod choose-one-of ((possibilities list))
   "Choose one or none of the options."
@@ -98,22 +98,22 @@
   "Choose n different entries from choice-list."
   (assert (<= n (length choice-list)))
   (let ((choices choice-list)
-	(chosen '()))
+        (chosen '()))
     (dotimes (i n)
       (let ((choice (choose-one-of choices)))
-	(setf chosen (cons choice chosen))
-	(setf choices (remove choice choices))))
+        (setf chosen (cons choice chosen))
+        (setf choices (remove choice choices))))
     chosen))
 
 (defmethod choose-n-of ((n integer) (choice-vector vector))
   "Choose n different entries from choice-vector."
   (assert (<= n (length choice-vector)))
   (let ((choices choice-vector)
-	(chosen (make-vector n)))
+        (chosen (make-vector n)))
     (dotimes (i n)
       (let ((choice (choose-one-of choices)))
-	(vector-push-extend choice chosen)
-	(setf choices (remove choice choices))))
+        (vector-push-extend choice chosen)
+        (setf choices (remove choice choices))))
     chosen))
 
 (defun choose-n-of-ordered (n choice-list)
@@ -121,27 +121,27 @@
   ;; Not very efficient at all
   (let ((choices (choose-n-of n choice-list)))
     (loop for i in choice-list
-	   when (member i choices)
-	   collect i)))
-  
+           when (member i choices)
+           collect i)))
+
 (defun prefs-range (spec)
   "Get the total probability range of a prefs spec."
   (loop for prob in spec by #'cddr
-	sum prob))
+        sum prob))
 
 (defun prefs-cond (spec)
   "Make a cond to choose an option. eg (prefs 4 'a 4 'b 2 'c)"
   `(let ((i (random ,(prefs-range spec))))
     (cond
       ,@(loop for prob in spec by #'cddr
-	      for val in (cdr spec) by #'cddr
-	      sum prob into prob-so-far
-	      collect `((< i ,prob-so-far) ,val)))))
+              for val in (cdr spec) by #'cddr
+              sum prob into prob-so-far
+              collect `((< i ,prob-so-far) ,val)))))
 
 (defmacro prefs (&rest spec)
   "Make a prefs cond to choose an option. eg (prefs 4 'a 4 'b 2 'c)"
   (prefs-cond spec))
-		   
+
 (defmacro prefs-list (spec)
   "Make a prefs cond to choose an option. eg (prefs-list '(4 'a 3 'b))"
   (prefs-cond spec))
@@ -149,7 +149,7 @@
 (defun prefs-lambda (&rest spec)
   "Make a lambda to choose an option. eg (prefs-lambda 4 'a 4 'b 2 'c)"
   (eval `(lambda () ,(prefs-cond spec))))
-		   
+
 (defun prefs-list-lambda (spec)
   "Make a lambda to choose an option. eg (prefs-list-lambda '(4 'a 3 'b))"
    (eval `(lambda () ,(prefs-cond spec))))
@@ -159,3 +159,18 @@
 (defmethod normal-to-255 (normal)
   "Convert a 0..1 value to a 0..255 value."
   (* normal normal-to-255-multiplier))
+
+(defmacro make-hash (&rest key-values)
+  (let ((hash (gensym))
+        (key-value-list (gensym))
+        (current-pair (gensym)))
+    `(let ((,key-value-list ,key-values)
+           (,hash (make-hash-table)))
+    (dolist (,current-pair ,key-values)
+      (setf (gethash (car ,current-pair)) (cdr ,current-pair)))
+    ,hash)))
+
+(defmacro with-gensyms ((&rest names) &body body)
+  "From Peter Siebel's Practical Common Lisp"
+  `(let ,(loop for n in names collect `(,n (gensym)))
+     ,@body))

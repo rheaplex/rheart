@@ -48,7 +48,7 @@
 
 (defmacro make-plane-pen (plane-index num-planes)
   "Make a pen for the plane."
- #| (let ((plane-factor (* (/ 1.0 (- num-planes 1))
+   #|(let ((plane-factor (* (/ 1.0 (- num-planes 1))
 			 plane-index)))
     (make-instance 'pen
 		   :distance (+ plane-pen-distance-minimum
@@ -76,33 +76,39 @@
 
 (defmethod make-planes ((d drawing) count)
   "Make the planes, ready to have skeletons for figures generated."
+  (advisory-message "Making planes.~%")
   (loop for point-method in (figure-generation-methods count)
-	for i from 0 below count
-	do (vector-push-extend 
-	    (make-instance 'plane 
-			   :figure-count (number-of-figures-for-plane i)
-			   :figure-policy point-method
-			   :pen (make-plane-pen i count))
-	    (planes d))))
+     for i from 0 below count
+     do (advisory-message (format nil "Making plane ~d.~%" (+ i 1)))
+     do (vector-push-extend 
+	 (make-instance 'plane 
+			:figure-count (number-of-figures-for-plane i)
+			:figure-policy point-method
+			:pen (make-plane-pen i count))
+	 (planes d))))
 
 (defmethod make-plane-skeletons ((l plane) (d drawing))
   "Generate the skeletons for the figures of the plane."
+  (advisory-message "Making plane skeleton(s).~%")
   (setf (figures l)
 	(funcall (figure-policy l)
 		 (composition-points d))))
 
 (defmethod make-planes-skeletons ((d drawing))
   "Generate the skeletons for the figures of each plane."
+  (advisory-message "Making planes skeletons.~%")
   (loop for l across (planes d)
-	do (make-plane-skeletons l d)))
+     do (make-plane-skeletons l d)))
 
 (defmethod draw-plane-figures ((l plane))
   "Draw around the skeletons of the figures of the plane."
+  (advisory-message "Drawing plane figure(s).~%")
   (loop for fig across (figures l)
 	do (draw-figure fig))) ;; (pen l)
 
 (defmethod draw-planes-figures ((d drawing))
   "Draw around the skeletons of the figures of each plane."
+  (advisory-message "Drawing planes figures.~%")
   (loop for l across (planes d)
 	do (draw-plane-figures l)))
 

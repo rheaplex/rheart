@@ -35,6 +35,7 @@
 
 (defmethod make-figure-from-points ((points vector))
   "Make a figure with a single polyline from the provided points."
+  (advisory-message "Making figure.~%")
   (let ((fig (make-instance 'figure)))
     (vector-push-extend (make-form-from-points points)
 			(forms fig))
@@ -43,5 +44,6 @@
 (defmethod draw-figure ((fig figure))
   "Draw the forms of a figure."
   (loop for form across (forms fig)
-	do (draw-form form)))
+     do (advisory-message "Drawing figure.~%")
+     do (draw-form form)))
 

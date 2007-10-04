@@ -2,17 +2,17 @@
 ;;  Copyright (C) 2006  Rhea Myers rhea@myers.studio
 ;;
 ;; This file is part of draw-something.
-;; 
+;;
 ;; draw-something is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 3 of the License, or
 ;; (at your option) any later version.
-;; 
+;;
 ;; draw-something is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -37,10 +37,6 @@
 (defmethod write-colour ((col colour) &key (to *ps-stream*))
   (multiple-value-bind (r g b) (hsb-to-rgb col)
     (write-rgb r g b :to to)))
-
-(defmethod write-fill (&key (to *ps-stream*))
-  "Write the fill operator."
-  (format to "fill~%"))
 
 (defmethod write-close-path (&key (to *ps-stream*))
   "Close the current PostScript path by drawing a line between its endpoints."
@@ -68,25 +64,25 @@
 
 (defmethod write-subpath (points &key (to *ps-stream*))
   "Write a subpath of a PostScript path."
-  (write-moveto (x (aref points 0)) 
-		(y (aref points 0))
-		:to to)
-  (do ((i 1 (+ i 1))) 
+  (write-moveto (x (aref points 0))
+                (y (aref points 0))
+                :to to)
+  (do ((i 1 (+ i 1)))
       ((= i (length points)))
-    (write-lineto (x (aref points i)) 
-		  (y (aref points i)) 
-		  :to to)))
+    (write-lineto (x (aref points i))
+                  (y (aref points i))
+                  :to to)))
 
 (defmethod write-rectfill ((rect rectangle) &key (to *ps-stream*))
   "Draw a rectangle with the given co-ordinates and dimensions."
-  (format to "~F ~F ~F ~F rectfill~%" (x rect) (y rect) (width rect) 
-	  (height rect)))
+  (format to "~F ~F ~F ~F rectfill~%" (x rect) (y rect) (width rect)
+          (height rect)))
 
 
 (defmethod write-rectstroke ((rect rectangle) &key (to *ps-stream*))
   "Draw a rectangle with the given co-ordinates and dimensions."
-  (format to "~F ~F ~F ~F rectstroke~%" (x rect) (y rect) (width rect) 
-	  (height rect)))
+  (format to "~F ~F ~F ~F rectstroke~%" (x rect) (y rect) (width rect)
+          (height rect)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Drawing writing
@@ -137,4 +133,35 @@
 (defmethod write-frame ((the-drawing drawing) ps)
   "Frame the drawing. Frame is bigger than PS bounds but should be OK."
   (write-rectstroke (inset-rectangle (bounds the-drawing) -1)
-		    :to ps))
+                    :to ps))
+
+(defmethod eps-write-drawing ((name string) (the-drawing drawing))
+  "Write the drawing"
+  (advisory-message (format nil "Writing drawing to file ~a .~%" name))
+  (ensure-directories-exist save-directory)
+  (with-open-file (ps name :direction :output
+                      :if-exists :supersede)
+    (write-eps-header (width (bounds the-drawing))
+                      (height (bounds the-drawing))
+                      :to ps)
+    (write-ground the-drawing ps)
+    ;;(write-frame the-drawing ps)
+    (loop for plane across (planes the-drawing)
+          do (loop for fig across (figures plane)
+                   do (write-figure fig ps)))
+    (write-eps-footer :to ps)
+    (namestring ps)))
+
+(defmethod eps-display-drawing (filepath)
+  "Show the drawing to the user in the GUI."
+  (let ((command
+         #+(or macos macosx darwin) "/usr/bin/open"
+         #-(or macos macosx darwin) "/usr/bin/gv"))
+    #+sbcl (sb-ext:run-program command (list filepath) :wait nil)
+    #+openmcl (ccl::os-command (format nil "~a ~a" command filepath))))
+
+(defmethod write-and-show-eps ((the-drawing drawing))
+  "Write and display the drawing as an eps file."
+  (advisory-message "Saving and viewing drawing as eps.~%")
+  (eps-display-drawing (eps-write-drawing (generate-filename)
+                                          the-drawing)))

@@ -26,7 +26,7 @@
 (defconstant maximum-spec-probability 9)
 (defconstant minimum-spec-count 2)
 (defconstant maximum-spec-count 3)
-(defconstant sv-spec-options '('ll 'lm 'lh 'ml 'mm 'mh 'hl 'hm 'hh))
+(defparameter sv-spec-options '('ll 'lm 'lh 'ml 'mm 'mh 'hl 'hm 'hh))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; LMH - Low medium and high value ranges from 0.0..1.0
@@ -335,9 +335,9 @@
   (let* ((scheme (make-colour-scheme symbols 7 7 .3 .6))
 	 (sv-spec-list (chooser-spec))
 	 (applier (make-colour-scheme-applier scheme sv-spec-list)))
+    (advisory-message "Colouring forms.~%")
     (print-colour-scheme scheme)
-    (format t "sv-spec: ~a~%" sv-spec-list)
-    (format t "Colouring forms.~%")
+    (advisory-message (format nil "sv-spec: ~a~%" sv-spec-list))
     (setf (ground drawing) 
 	  (choose-colour-for applier
 			     'background))
