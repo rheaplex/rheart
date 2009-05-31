@@ -22,40 +22,52 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconstant the-random-state (make-random-state t))
-  
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Methods
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defmethod generate-description ()
-  "Describe a single (set of) figure(s) on a single ground."
-  (let ((plural (amount)))
-    (concatenate-string plural (shape plural)
-			"on a" (ground) "ground.")))
 
-(defmethod amount ()
-  "Generate a quantity description."
-  (choose-randomly '("A" "A pair of" "Some" "Many")))
+;; Utilities
 
-(defmethod pluralise (object plurality)
+(defun maybe (fun &key (probability 0.5) (default nil))
+  "Call fun with aqrgs if random(0..1) is less than probability."
+  (if (< (random 1.0 the-random-state) probability)
+      (funcall fun)
+    default))
+
+(defun choose-randomly (choices)
+  "Choose one of the parameters randomly."
+  (nth (random (list-length choices) the-random-state) 
+       choices))
+
+(defun choose-randomly-deep (choices)
+  "Choose one item from a list of lists."
+  (choose-randomly (choose-randomly choices)))
+
+(defun concatenate-string (&rest strings)
+  "Concatenate a list of strings with an optional given prefix, separator and suffix."
+  (let ((all (car strings)))
+    (dolist (s (cdr strings))
+      (when (not (equal s ""))
+	(setf all (concatenate 'string all
+			       (if (equal all "")
+				   ""
+				 " ") 
+			       s))))
+    all))
+
+(defun pluralise (object plurality)
   "Make a word plural if necessary."
   (if (equal plurality "A")
       object
     (concatenate 'string object "s")))
+  
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Generators
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defun amount ()
+  "Generate a quantity description."
+  (choose-randomly '("A" "A pair of" "Some" "Many")))
 
 ;; Appearance
-
-(defmethod appearance ()
-  "Generate the appearance of a figure."
-  (concatenate-string (maybe #'texture :default "")
-		      (colour)))
-
-(defmethod texture ()
-  "Choose a texture."
-  (choose-randomly '("halftoned" "crosshatched" "scumbled" "glazed" "sketchy" 
-		     "smooth")))
-
-;; The texture definitions
 
 (defparameter monochromes '("black" "grey" "white"))
 (defparameter hues '("red" "orange" "yellow" "green" "blue" "purple"))
@@ -71,20 +83,24 @@
 			     artificials))
 (defparameter tone '("pale" "" "rich" "bright" "" "dark"))
 
-(defmethod colour ()
+(defun colour ()
   "Generate a colour description."
   (concatenate-string (choose-randomly tone)
 		      (choose-randomly-deep palettes)))
 
+(defun texture ()
+  "Choose a texture."
+  (choose-randomly '("halftoned" "crosshatched" "scumbled" "glazed" "sketchy" 
+		     "smooth")))
+
+(defun appearance ()
+  "Generate the appearance of a figure."
+  (concatenate-string (maybe #'texture :default "")
+		      (colour)))
+
 ;; Shape
 
-(defmethod shape (plural)
-  "Generate a shape description."
-  (concatenate-string (shape-size)
-		      (appearance)
-		      (shape-form plural)))
-
-(defmethod shape-size ()
+(defun shape-size ()
   "Generate a size for the shape."
   (choose-randomly '("" "" "tiny" "small" "large" "massive")))
 
@@ -100,7 +116,7 @@
 (defparameter generic-shape-treatments '("" "" "" "silhouetted" "outlined" 
 					 "abstracted"))
 
-(defmethod shape-form (plural)
+(defun shape-form (plural)
   "Generate a shape form description."
   (cond 
    ((> (random 1.0 the-random-state) 0.5)
@@ -110,37 +126,22 @@
     (concatenate-string (choose-randomly generic-shape-treatments)
 		 (pluralise (choose-randomly-deep generic-shapes) plural)))))
 
+(defun shape (plural)
+  "Generate a shape description."
+  (concatenate-string (shape-size)
+		      (appearance)
+		      (shape-form plural)))
+
 ;; Ground
 
-(defmethod ground ()
+(defun ground ()
   "Generate a simple ground description."
   (appearance))
 
-;; Utilities
+;; Description
 
-(defmethod maybe (fun &key (probability 0.5) (default nil))
-  "Call fun with aqrgs if random(0..1) is less than probability."
-  (if (< (random 1.0 the-random-state) probability)
-      (funcall fun)
-    default))
-
-(defmethod choose-randomly (choices)
-  "Choose one of the parameters randomly."
-  (nth (random (list-length choices) the-random-state) 
-       choices))
-
-(defmethod choose-randomly-deep (choices)
-  "Choose one item from a list of lists."
-  (choose-randomly (choose-randomly choices)))
-
-(defmethod concatenate-string (&rest strings)
-  "Concatenate a list of strings with an optional given prefix, separator and suffix."
-  (let ((all (car strings)))
-    (dolist (s (cdr strings))
-      (when (not (equal s ""))
-	(setf all (concatenate 'string all
-			       (if (equal all "")
-				   ""
-				 " ") 
-			       s))))
-    all))
+(defun generate-description ()
+  "Describe a single (set of) figure(s) on a single ground."
+  (let ((plural (amount)))
+    (concatenate-string plural (shape plural)
+			"on a" (ground) "ground.")))
