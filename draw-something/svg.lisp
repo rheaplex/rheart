@@ -35,7 +35,8 @@
 
 (defmethod svg-rgb ((col colour) )
   (multiple-value-bind (r g b) (hsb-to-rgb col)
-    (format nil "#~X~X~X"  (* r 15) (* g 15) (* b 15))))
+    (format nil "#~X2~X2~X2"  (* (floor r) 15) 
+	    (* (floor g) 15) (* (floor b) 15))))
 
 (defmethod svg-path-tag-start (&key (to *svg-stream*))
   "Write the start of the path tag."
