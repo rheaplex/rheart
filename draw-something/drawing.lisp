@@ -62,7 +62,7 @@
 	    (floor (height (bounds the-drawing))))
     the-drawing))
 
-(defparameter save-directory "../draw-something-drawings/")
+(defvar save-directory "../draw-something-drawings/")
 
 (defmethod generate-filename (&optional (suffix ".eps"))
   "Make a unique filename for the drawing, based on the current date & time."
