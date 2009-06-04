@@ -44,5 +44,5 @@
   ;;(format t "Random state: ~a.~%" (write-to-string *random-state*))
   (let ((the-drawing (draw-something)))
     (advisory-message "Finished drawing.~%")
-    (write-and-show-eps the-drawing)
+    (write-svg the-drawing)
     (advisory-message "Finished draw-something.~%")))

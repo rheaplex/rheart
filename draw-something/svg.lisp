@@ -76,7 +76,7 @@
 
 (defmethod svg-subpath (points &key (to *svg-stream*))
   "Write a subpath of a PostScript path."
-  (write-moveto (x (aref points 0))
+  (svg-moveto (x (aref points 0))
                 (y (aref points 0))
                 :to to)
   (do ((i 1 (+ i 1)))
@@ -189,8 +189,13 @@
     #+sbcl (sb-ext:run-program command (list filepath) :wait nil)
     #+openmcl (ccl::os-command (format nil "~a ~a" command filepath))))
 
+(defmethod write-svg ((the-drawing drawing))
+  "Write the drawing as an svg file."
+  (advisory-message "Saving drawing as svg.~%")
+  (svg-write-drawing (generate-filename ".svg")
+                                          the-drawing))
+
 (defmethod write-and-show-svg ((the-drawing drawing))
   "Write and display the drawing as an svg file."
-  (advisory-message "Saving and viewing drawing as svg.~%")
-  (svg-display-drawing (svg-write-drawing (generate-filename ".svg")
-                                          the-drawing)))
+  (advisory-message "Viewing drawing as svg.~%")
+  (svg-display-drawing (write-svg the-drawing)))
