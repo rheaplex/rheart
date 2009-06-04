@@ -50,5 +50,7 @@
 (defun run-draw-something ()
   "An sbcl-specific wrapper to make draw-something useful as a script."
   (run)
-  #+sbcl ((format nil "gzip --suffix .svgz ~a/*.svg" save-directory))
+  #+sbcl (sb-ext:run-program (format nil 
+				     "gzip --suffix .svgz ~a/*.svg" 
+				     save-directory))
   #+sbcl (quit))
