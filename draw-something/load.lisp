@@ -47,4 +47,5 @@
   (let ((the-drawing (draw-something)))
     (advisory-message "Finished drawing.~%")
     (write-svg the-drawing)
-    (advisory-message "Finished draw-something.~%")))
+    (advisory-message "Finished draw-something.~%")
+    #+sbcl (quit)))
