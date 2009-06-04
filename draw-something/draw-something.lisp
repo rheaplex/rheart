@@ -51,6 +51,7 @@
   "An sbcl-specific wrapper to make draw-something useful as a script."
   (run)
   #+sbcl (sb-ext:run-program "gzip"
-			     (list "--suffix" ".svgz ~a/*.svg" save-directory)
+			     (list "--suffix" "z" 
+				   (format nil "~a/*.svg" save-directory))
 			     :wait nil)
   #+sbcl (quit))
