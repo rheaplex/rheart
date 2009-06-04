@@ -41,3 +41,10 @@
 (load "postscript.lisp")
 (load "svg.lisp")
 (load "draw-something.lisp")
+
+(defun run-draw-something ()
+  ;;(format t "Random state: ~a.~%" (write-to-string *random-state*))
+  (let ((the-drawing (draw-something)))
+    (advisory-message "Finished drawing.~%")
+    (write-svg the-drawing)
+    (advisory-message "Finished draw-something.~%")))
