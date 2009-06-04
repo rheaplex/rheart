@@ -46,3 +46,9 @@
     (advisory-message "Finished drawing.~%")
     (write-svg the-drawing)
     (advisory-message "Finished draw-something.~%")))
+
+(defun run-draw-something ()
+  "An sbcl-specific wrapper to make draw-something useful as a script."
+  (run)
+  #+sbcl ((format nil "gzip --suffix .svgz ~a/*.svg" save-directory))
+  #+sbcl (quit))
