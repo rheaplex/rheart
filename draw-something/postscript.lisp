@@ -149,8 +149,8 @@
     (loop for plane across (planes the-drawing)
           do (loop for fig across (figures plane)
                    do (write-figure fig ps)))
-    (write-eps-footer :to ps)
-    (namestring ps)))
+    (write-eps-footer :to ps))
+ (pathname ps))
 
 (defmethod eps-display-drawing (filepath)
   "Show the drawing to the user in the GUI."
@@ -158,7 +158,8 @@
          #+(or macos macosx darwin) "/usr/bin/open"
          #-(or macos macosx darwin) "/usr/bin/gv"))
     #+sbcl (sb-ext:run-program command (list filepath) :wait nil)
-    #+openmcl (ccl::os-command (format nil "~a ~a" command filepath))))
+    #+openmcl (ccl::os-command (format nil "~a ~a" command filepath)))
+  filepath)
 
 (defmethod write-and-show-eps ((the-drawing drawing))
   "Write and display the drawing as an eps file."

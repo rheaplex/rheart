@@ -44,10 +44,15 @@
   ;;(format t "Random state: ~a.~%" (write-to-string *random-state*))
   (let ((the-drawing (draw-something)))
     (advisory-message "Finished drawing.~%")
-    (write-svg the-drawing)
-    (advisory-message "Finished draw-something.~%")))
+    (let ((filepath (write-svg the-drawing)))
+      (advisory-message "Finished draw-something.~%")
+      filepath)))
 
 (defun run-draw-something ()
   "An sbcl-specific wrapper to make draw-something useful as a script."
-  (run)
-  #+sbcl (quit))
+  (let ((filepath (run)))
+    #+sbcl (sb-ext:run-program "/bin/gzip" 
+			       (list "--suffix" "z" 
+				     (namestring filepath)) 
+			       :wait t)
+    #+sbcl (quit)))

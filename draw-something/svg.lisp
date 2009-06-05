@@ -179,7 +179,7 @@
        do (loop for fig across (figures plane)
                    do (svg-figure fig ps)))
     (svg-footer :to ps)
-    (namestring ps)))
+    (pathname ps)))
 
 (defmethod svg-display-drawing (filepath)
   "Show the drawing to the user in the GUI."
@@ -187,13 +187,14 @@
          #+(or macos macosx darwin) "/usr/bin/open"
          #-(or macos macosx darwin) "/usr/bin/iceweasel"))
     #+sbcl (sb-ext:run-program command (list filepath) :wait nil)
-    #+openmcl (ccl::os-command (format nil "~a ~a" command filepath))))
+    #+openmcl (ccl::os-command (format nil "~a ~a" command filepath)))
+  filepath)
 
 (defmethod write-svg ((the-drawing drawing))
   "Write the drawing as an svg file."
   (advisory-message "Saving drawing as svg.~%")
   (svg-write-drawing (generate-filename ".svg")
-                                          the-drawing))
+		     the-drawing))
 
 (defmethod write-and-show-svg ((the-drawing drawing))
   "Write and display the drawing as an svg file."
