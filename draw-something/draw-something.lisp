@@ -47,12 +47,3 @@
     (let ((filepath (write-svg the-drawing)))
       (advisory-message "Finished draw-something.~%")
       filepath)))
-
-(defun run-draw-something ()
-  "An sbcl-specific wrapper to make draw-something useful as a script."
-  (let ((filepath (run)))
-    #+sbcl (sb-ext:run-program "/bin/gzip" 
-			       (list "--suffix" "z" 
-				     (namestring filepath)) 
-			       :wait t)
-    #+sbcl (quit)))
