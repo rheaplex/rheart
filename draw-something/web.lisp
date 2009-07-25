@@ -34,13 +34,14 @@
 ;; Configuration
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defparameter +folder-path+ "./")
+;;TODO Use same as draw-something so they can be configured simultaneously
+(defparameter +folder-path+ ".")
 (defparameter +index-file-path+ (format nil "~a/index.html" +folder-path+))
 (defparameter +rss-file-path+ (format nil "~a/rss.xml" +folder-path+))
 (defparameter +web-page-count+ 2)
 (defparameter +rss-entry-count+ 10)
 (defparameter +svg-extention+ ".svgz")
-(defparameter +svg-extention-length+ (length ".svgz"))
+(defparameter +svg-extention-length+ (length +svg-extention+))
 (defparameter +rss-header+ "<?xml version=\"1.0\" encoding=\"utf-8\"?>
 <rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">
   <channel>
@@ -120,7 +121,8 @@
 
 (defun write-web-page (svg-filename previous-html-file next-html-file)
   "Write a web page to wrap an svg file, complete with links to next/prev"
-  (with-open-file (html-file (html-svg-filename svg-filename)
+  (with-open-file (html-file (format nil "~a/~a" +folder-path+
+				     (html-svg-filename svg-filename))
 			     :direction :output
 			     :if-exists :supersede)
     (format html-file "<html><head><title>~a</title>
@@ -207,13 +209,10 @@
 				       (namestring filepath)) 
 				 :wait t))
   ;; Yes it would be better if we cached the svg info somehow
-  (let ((svg-files (directory (format nil "~a/*~a" +folder-path+ 
-				      +svg-extention+))))
+  (let ((svg-files (reverse (directory (format nil "~a/*~a" +folder-path+ 
+					       +svg-extention+)))))
     (when svg-files
       (write-web-pages svg-files nil +web-page-count+)
       (link-index-page (html-svg-filename (car svg-files)))
       (write-rss-file svg-files)))
   #+sbcl (quit))
-
-;; To solve the log spam problem from draw-something,
-;; redirect stdout to /dev/null && just keep stderr for exceptions?
