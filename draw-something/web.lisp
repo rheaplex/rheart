@@ -131,9 +131,10 @@
 </head><body>~%"
 	    (pathname-name svg-filename))
     (write-svg-tag html-file svg-filename)
-    (write-links html-file previous-html-file next-html-file)
     ;; YOU MUST CHANGE THE SOURCE LINK IF YOU MODIFY THIS CODE
-    (format html-file "<p><a href=\"http://creativecommons.org/licenses/by-sa/3.0/\">Image licence - CC-BY-SA</a>&nbsp;&nbsp;<a href=\"https://rhea.art/git/?p=rheart.git;a=tree;f=draw-something>Code licence - GPL 3 or higher.</a></p></body></html>~%")))
+    (format html-file "<p align=\"center\"><a href=\"http://creativecommons.org/licenses/by-sa/3.0/\">Image licence - CC-BY-SA</a>&nbsp;&nbsp;<a href=\"https://rhea.art/git/?p=rheart.git;a=tree;f=draw-something\">Code licence - GPL 3 or higher.</a></p>~%")
+    (write-links html-file previous-html-file next-html-file)
+    (format html-file "</body></html>~%")))
 
 (defun write-web-pages (svg-list next-html limit)
   "Recursively generate (at most) the given number of web pages for svg files"
