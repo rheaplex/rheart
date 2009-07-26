@@ -57,9 +57,9 @@
   "Make a drawing, ready to be started."
   (let ((the-drawing (make-instance 'drawing 
 				    :bounds (make-drawing-bounds))))
-    (format t "Making drawing. Size: ~dx~d.~%" 
-	    (floor (width (bounds the-drawing)))
-	    (floor (height (bounds the-drawing))))
+    (advisory-message (format nil "Making drawing. Size: ~dx~d.~%" 
+			      (floor (width (bounds the-drawing)))
+			      (floor (height (bounds the-drawing)))))
     the-drawing))
 
 (defvar save-directory "../draw-something-drawings/")

@@ -97,16 +97,16 @@
 	('h (random-high-value lmh))))
 
 (defmethod print-lmh (lmh)
-  (format t "low: ")
+  (advisory-message "low: ")
   (loop for l across (low-values lmh)
-	do (format t "~a " l))
-  (format t "~%medium: ")
+	do (advisory-message (format nil "~a " l)))
+  (advisory-message  "~%medium: ")
   (loop for m across (medium-values lmh)
-	do (format t "~a " m))
-  (format t "~%high: ")
+	do (advisory-message (format nil "~a " m)))
+  (advisory-message  "~%high: ")
   (loop for h across (high-values lmh)
-	do (format t "~a " h))
-  (format t "~%"))
+	do (advisory-message (format nil "~a " h)))
+  (advisory-message  "~%"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Colour Scheme
@@ -128,14 +128,14 @@
   (:documentation "The values describing a colour scheme."))
 
 (defmethod print-colour-scheme (scheme)
-  (format t "Colour Scheme:~%")
-  (format t "hues:~%")
+  (advisory-message  "Colour Scheme:~%")
+  (advisory-message  "hues:~%")
   (maphash (lambda (key value)
-	     (format t "~a ~a " key value))
+	    (advisory-message (format nil "~a ~a " key value)))
 	   (colour-scheme-hues scheme))
-  (format t "~%saturations:~%")
+  (advisory-message  "~%saturations:~%")
   (print-lmh (colour-scheme-saturations scheme))
-  (format t "values:~%")
+  (advisory-message  "values:~%")
   (print-lmh (colour-scheme-values scheme)))
 
 (defmethod symbol-colour-scheme-hue (scheme hue-id)
@@ -266,8 +266,8 @@
 	 (target (float (gethash spec (applier-probabilities applier))))
 	 (current (/ spec-count generation-count))
 	 (difference (- target current)))
-    (format t "  ~a ~a ~,3F ~,3F ~,3F~%"
-	    spec spec-count target current difference) 
+    (advisory-message (format nil "  ~a ~a ~,3F ~,3F ~,3F~%"
+			      spec spec-count target current difference) )
     difference))
 
 (defmethod most-deviant-spec (applier)
@@ -281,7 +281,7 @@
 		     (setf highest difference)
 		     (setf result key))))
 	     (applier-probabilities applier))
-    (format t "~a~%" result)
+    (advisory-message (format nil "~a~%" result))
     result))
 
 (defmethod increase-spec-count (applier spec)

@@ -87,7 +87,7 @@
 
 (defmethod add-codelet-to-coderack ((c codelet) (rack coderack))
   "Add the codelet to the list."
-  (format t "Adding: ~a~%" (string-downcase (string (action c))))
+  (advisory-message (format nil "Adding: ~a~%" (string-downcase (string (action c)))))
   (vector-push-extend c (codelets rack)))
 
 (defmethod add-codelet ((rack coderack) action urgency category &rest arguments)
@@ -119,7 +119,7 @@
 
 (defmethod run-codelet ((c codelet))
   "Run the codelet."
-  (format t "Running: ~a~%" (string-downcase (string (action c))))
+  (advisory-message (format nil "Running: ~a~%" (string-downcase (string (action c)))))
   (apply #'funcall (action c) (arguments c)))
 
 (defmethod run-one-codelet ((rack coderack))
