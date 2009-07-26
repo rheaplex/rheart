@@ -34,10 +34,11 @@
 ;; Configuration
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;;TODO Use same as draw-something so they can be configured simultaneously
-(defparameter +folder-path+ ".")
-(defparameter +index-file-path+ (format nil "~a/index.html" +folder-path+))
-(defparameter +rss-file-path+ (format nil "~a/rss.xml" +folder-path+))
+;; Set the value of save-directory *before* loading this or draw-something 
+;; and they'll share it
+(defparameter save-directory ".")
+(defparameter +index-file-path+ (format nil "~a/index.html" save-directory))
+(defparameter +rss-file-path+ (format nil "~a/rss.xml" save-directory))
 (defparameter +web-page-count+ 2)
 (defparameter +rss-entry-count+ 10)
 (defparameter +svg-extention+ ".svgz")
@@ -121,7 +122,7 @@
 
 (defun write-web-page (svg-filename previous-html-file next-html-file)
   "Write a web page to wrap an svg file, complete with links to next/prev"
-  (with-open-file (html-file (format nil "~a/~a" +folder-path+
+  (with-open-file (html-file (format nil "~a/~a" save-directory
 				     (html-svg-filename svg-filename))
 			     :direction :output
 			     :if-exists :supersede)
@@ -210,7 +211,7 @@
 				       (namestring filepath)) 
 				 :wait t))
   ;; Yes it would be better if we cached the svg info somehow
-  (let ((svg-files (reverse (directory (format nil "~a/*~a" +folder-path+ 
+  (let ((svg-files (reverse (directory (format nil "~a/*~a" save-directory 
 					       +svg-extention+)))))
     (when svg-files
       (write-web-pages svg-files nil +web-page-count+)
