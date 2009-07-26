@@ -36,7 +36,7 @@
 
 ;; Set the value of save-directory *before* loading this or draw-something 
 ;; and they'll share it
-(defparameter save-directory ".")
+(defvar save-directory ".")
 (defparameter +index-file-path+ (format nil "~a/index.html" save-directory))
 (defparameter +rss-file-path+ (format nil "~a/rss.xml" save-directory))
 (defparameter +web-page-count+ 2)
