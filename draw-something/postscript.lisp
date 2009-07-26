@@ -149,8 +149,8 @@
     (loop for plane across (planes the-drawing)
           do (loop for fig across (figures plane)
                    do (write-figure fig ps)))
-    (write-eps-footer :to ps))
- (pathname ps))
+    (write-eps-footer :to ps)
+    (pathname ps)))
 
 (defmethod eps-display-drawing (filepath)
   "Show the drawing to the user in the GUI."

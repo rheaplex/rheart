@@ -18,18 +18,23 @@
 
 ;;(in-package "DRAW-SOMETHING")
 
+(defvar *print-advisories* t)
+(defvar *print-debugs* t)
+
 (defmethod debug-message (msg)
   "Write the message to the error stream, not to standard output."
-  (format *debug-io*
-          "~A~%"
-          msg)
-  (finish-output *debug-io*))
+  (when *print-debugs*
+    (format *debug-io*
+	    "~A~%"
+	    msg)
+    (finish-output *debug-io*)))
 
 (defmethod advisory-message (msg)
   "Write the message to the error stream, not to standard output. No newline."
-  (format *debug-io*
-          msg)
-  (finish-output *debug-io*))
+  (when *print-advisories*
+    (format *debug-io*
+	    msg)
+    (finish-output *debug-io*)))
 
 (defmethod make-vector (initial-size)
   "Make a stretchy vector."
