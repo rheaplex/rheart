@@ -27,7 +27,7 @@
 ;; Utilities
 
 (defun maybe (fun &key (probability 0.5) (default nil))
-  "Call fun with aqrgs if random(0..1) is less than probability."
+  "Call fun if random(0..1) is less than probability."
   (if (< (random 1.0 the-random-state) probability)
       (funcall fun)
     default))
