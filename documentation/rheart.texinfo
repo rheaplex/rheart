@@ -24,7 +24,7 @@ notice and this notice are preserved
 @title rheart
 @subtitle generative art & aesthetics programs
 @image{draw-something,12cm,12cm}
-@author Rhea Myers (@email{rhea@myers.studio})
+@author Rhea Myers (@email{rhea@@myers.studio})
 @page
 @vskip 0pt plus 1filll
 @insertcopying
