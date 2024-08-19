@@ -1,17 +1,17 @@
-;;  Ben.lisp -  An toy reimplementation of Harold Cohen's AARON circa 
+;;  Ben.lisp -  An toy reimplementation of Harold Cohen's AARON circa
 ;;              "What Is An Image".
 ;;  Copyright (C) 2008 Rhea Myers rhea@myers.studio
-;; 
+;;
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 3 of the License, or
 ;; (at your option) any later version.
-;; 
+;;
 ;; ben is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;; 
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -242,10 +242,10 @@
 ;; The image cell matrix.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defparameter *image-width* 200
+(defparameter *image-width* 1024
   "The width of the image cell matrix, in cells.")
 
-(defparameter *image-height* 200
+(defparameter *image-height* 768
   "The height of the image cell matrix, in cells.")
 
 (defstruct cell
@@ -296,6 +296,7 @@
 
 (defun apply-line-cells (x0 y0 x1 y1 fun)
   "Bresenham's algorithm. Always applies left to right."
+  ;;FIXME: use modified version, see Cohen's writing.
   (assert (>= x0 0))
   (assert (< x0 *image-width*))
   (assert (>= y0 0))
@@ -486,7 +487,7 @@
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Context
+;; Rule context
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defparameter *contexts* (make-hash-table))
@@ -507,7 +508,7 @@
 
 (defun add-production-to-context (context-name production)
   (setf (context-productions (get-context context-name))
-	(append (context-productions (get-context context-name)) 
+	(append (context-productions (get-context context-name))
 		(list production))))
 
 (defun set-context (context-name)
@@ -523,17 +524,19 @@
 ;; Productions
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defvar previous-production nil)
+
 (defstruct production
   description
   left-hand-side
   right-hand-side)
 
 (defmacro defproduction (context-name description &body body)
-  "Define a production rule. Note that description doesn't have to be unique."
+  "Define a production rule. Note description doesn't have to be unique."
   (let* ((after-arrow (member '=> body))
          (left-hand-side (ldiff body after-arrow))
          (right-hand-side (rest after-arrow)))
-    `(add-production-to-context 
+    `(add-production-to-context
       ,context-name
       (make-production
        :description ,description
@@ -544,7 +547,10 @@
   "Try to find and apply a single production. Returns t if one ran."
   (dolist (the-production (current-context-productions))
     (when (funcall (production-left-hand-side the-production))
-      (format t "~a~%" (production-description the-production))
+      (when (not (eq (production-description the-production)
+                     previous-production))
+        (format t "~a~%" (production-description the-production))
+        (setf previous-production (production-description the-production)))
       (funcall (production-right-hand-side the-production))
       (return t))))
 
@@ -565,7 +571,7 @@
 ;; Movement Control
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar pen-position (make-point 10 10))
+(defvar pen-position nil)
 (defvar pen-direction 2)
 (defvar pen-speed 1.0)
 (defvar pen-max-turn (/ radian 10))
@@ -627,20 +633,44 @@
   =>
   (set-context 'sectors))
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Sectors
+;; Lines
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+(defstruct line-spec
+  from
+  from-angle
+  to
+  to-angle
+  curviness)
+
+(defvar lines-for-current-development)
+;; Used by Sectors, declared here to keep the compiler happy.
 (defvar line-number-of-waypoints)
 (defvar line-current-waypoint)
 
-(defun start-sectors ()
+(defproduction 'lines
+    "finished drawing lines of current development"
+  (null lines-for-current-development)
+  =>
+  (set-context 'planning))
+
+(defproduction 'lines
+    "drawing next line of current development"
+  (not (null lines-for-current-development))
+  =>
+  ;; Lines should instantiate the line templates and call sectors for each
+  (setf current-line-spec (first lines-for-current-development))
+  (pop lines-for-current-development)
   (set-context 'sectors)
   (setf line-number-of-waypoints 1)
   (setf line-current-waypoint 0)
   (setf pen-position (line-spec-from current-line-spec))
   (setf pen-direction (line-spec-from-angle current-line-spec)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Sectors
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun line-finished ()
   ;; Replace with a pen distance check
@@ -657,41 +687,11 @@
   (set-waypoint)
   (set-context 'curves))
 
-(defproduction 'sectors 
+(defproduction 'sectors
     "finished line"
   (line-finished)
   =>
   (set-context 'lines))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Lines
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defstruct line-spec
-  from
-  from-angle
-  to
-  to-angle
-  curviness)
-
-(defvar lines-for-current-development)
-
-(defproduction 'lines
-    "finished drawing lines of current development"
-  (null lines-for-current-development)
-  =>
-  (set-context 'planning))
-
-(defproduction 'lines
-    "drawing next line of current development"
-  (not (null lines-for-current-development))
-  =>
-  ;; Lines should instantiate the line templates and call sectors for each
-  (setf current-line-spec (first lines-for-current-development))
-  (pop lines-for-current-development)
-  (start-sectors))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Planning
@@ -705,34 +705,57 @@
 (defun plan-line-figure ()
   (setf current-figure (make-figure :allocated-space planned-figure-space))
   (setf lines-for-current-development
-        ;; These should be line templates for lines to instantiate
+        ;;FIXME: These should be line templates for lines to instantiate
         (list (make-line-spec
-               :from (make-point 100 10)
+               :from (make-point (rectangle-left planned-figure-space)
+                                 (+ (rectangle-y planned-figure-space)
+                                    (/ (rectangle-height planned-figure-space)
+                                       2)))
                :from-angle 1.6
-               :to (make-point 10 10)
+               :to (make-point (rectangle-right planned-figure-space)
+                               (+ (rectangle-y planned-figure-space)
+                                  (/ (rectangle-height planned-figure-space)
+                                     2)))
                :to-angle 1.6))))
 
 (defun plan-loop-figure ()
   (setf current-figure (make-figure :allocated-space planned-figure-space
                                     :closed t))
+  (print planned-figure-space)
   (setf lines-for-current-development
-        ;; These should be line templates for lines to instantiate
+        ;;FIXME: These should be line templates for lines to instantiate
         (list (make-line-spec
-               :from (make-point 10 100)
+               :from (make-point (rectangle-left planned-figure-space)
+                                 (+ (rectangle-y planned-figure-space)
+                                    (/ (rectangle-height planned-figure-space)
+                                       2)))
                :from-angle 1.5
-               :to (make-point 100 100)
+               :to (make-point (rectangle-right planned-figure-space)
+                                 (+ (rectangle-y planned-figure-space)
+                                    (/ (rectangle-height planned-figure-space)
+                                       2)))
                :to-angle 5)
               (make-line-spec
-               :from (make-point 100 100)
+               :from (make-point (rectangle-right planned-figure-space)
+                                 (+ (rectangle-y planned-figure-space)
+                                    (/ (rectangle-height planned-figure-space)
+                                       2)))
                :from-angle 5
-               :to (make-point 10 100)
+               :to (make-point (rectangle-left planned-figure-space)
+                               (+ (rectangle-y planned-figure-space)
+                                  (/ (rectangle-height planned-figure-space)
+                                     2)))
                :to-angle 1.5))))
 
 (defproduction 'planning
     "planning next development"
   (not (null planned-figure-space))
   =>
-  (plan-loop-figure)
+  (if (> (random 1.0) 0.5)
+      (plan-loop-figure)
+      (progn (print "line")
+             (plan-line-figure)))
+  (print lines-for-current-development)
   (setf planned-figure-space nil)
   (set-context 'lines))
 
@@ -790,7 +813,7 @@
         (incf figure-allocation-failures)
         (setf planned-figure-space nil)))))
 
-(defproduction 'mapping 
+(defproduction 'mapping
     "couldn't fulfill space requirement"
   (allocation-failed-this-time)
   =>
@@ -822,14 +845,14 @@
 ;; TODO: Decide on the number of small & large figures and general distribution
 
 (defun enough-figures ()
-  (>= (length *figures*) 1))
+  (>= (length *figures*) 10))
 
 (defun no-more-room ()
   (> figure-allocation-failures 5))
 
 (defun specify-required-figure-space ()
-  (setf required-figure-space-width (+ 10 (random 40)))
-  (setf required-figure-space-height (+ 10 (random 40))))
+  (setf required-figure-space-width (* 100 (random-range 1 5)))
+  (setf required-figure-space-height (* 100 (random-range 1 5))))
 
 (defproduction 'artwork
     "drawn enough figures"

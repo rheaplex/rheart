@@ -1,7 +1,7 @@
 
 ;;  on-purpose-line.lisp -  An implementation of the line drawing algorithm from
 ;;                          Harold Cohen's essay "On Purpose".
-;;  Copyright (C) 2008 Rhea Myers rhea@myers.studio
+;;  Copyright (C) 2008, 2024 Rhea Myers rhea@myers.studio
 ;;
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -16,264 +16,22 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; A simple implementation of the line drawing algorithm from Harold Cohen's
 ;; essay "On Perception".
-;; The following are not implemented:
-;; - Sub-phases taking their parameter range from the previous sub-phase.
 ;; The following are guesses:
 ;; - All the parameter ranges.
 ;; - The homing algorithm.
-;; The following may be historically inauthentic:
-;; - The use of the sigmoid function.
 ;; The following are historically inauthentic:
 ;; - The use of Lisp rather than C.
-;; - The use of floating point maths rather than integer maths.
 ;; This is at best an approximation, but hopefully an interesting approximation.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Utilities.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defun choose-one-of (&rest possibilities)
-  "Choose one of the given options."
-  (nth (random (length possibilities)) possibilities))
-
-(defun random-range (a b)
-  "Make a random number from a to below b."
-  (let ((range (- b a)))
-    (if (= range 0)
-        a
-        (+ (random range) a))))
-
-(defun sigmoid (time)
-  "An S Curve / sigmoid function. Useful range roughly -/+8. See Wikipedia."
-  ;; 0 at -8, 0.5 at 1.0 and 1 at +8 , with an S-shaped graph
-  (/ 1 (+ 1 (exp (- time)))))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Geometry.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defconstant 2pi (* pi 2))
-(defconstant -pi (- pi))
-
-(defun normalize-relative-angle (angle)
-  "Normalise a relative angle in radians to the range [-pi,+pi[."
-  (let ((trimmed-angle (mod angle 2pi)))
-    (if (>= trimmed-angle 0)
-        (if (< trimmed-angle pi)
-            trimmed-angle
-            (- trimmed-angle 2pi))
-        (if (>= trimmed-angle -pi)
-            trimmed-angle
-            (+ trimmed-angle 2pi)))))
-
-(defun bearing-to-position (x y heading target-x target-y)
-  "Find the bearing from x,y,heading(radians, relative) to target-x,target-y."
-  (normalize-relative-angle (- (atan (- target-y y) (- target-x x))
-                               heading)))
-
-(defun make-point (x y)
-  (cons x y))
-
-(defun point-x (item)
-  (car item))
-
-(defun point-y (item)
-  (cdr item))
-
-(defun point-distance (from to)
-  "The distance between two points."
-  (abs (sqrt (+ (expt (- (point-x to) (point-x from)) 2)
-                (expt (- (point-y to) (point-y from)) 2)))))
-
-(defun offset-point-along-direction (p direction amount)
-  ;; Direction is radians anticlockwise from the positive x axis
-  (make-point (+ (point-x p)
-                 (* amount (cos direction)))
-              (+ (point-y p)
-                 (* amount (sin direction)))))
-
-(defun angle-between-points (from to)
-  "Calculate the angle of the second point around the first, 0..2pi from pos x."
-  (atan (- (point-y to) (point-y from))
-        (- (point-x to) (point-x from))))
-
-(defun line-length (from to)
-  "The length of the line between the two points."
-  (abs (point-distance from to)))
-
-(defstruct rectangle
-  x
-  y
-  width
-  height)
-
-(defun rectangle-left (rect)
-  (rectangle-x rect))
-
-(defun rectangle-top (rect)
-  (+ (rectangle-y rect) (rectangle-height rect)))
-
-(defun rectangle-right (rect)
-  (+ (rectangle-x rect) (rectangle-width rect)))
-
-(defun rectangle-bottom (rect)
-  (rectangle-y rect))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; The image cell matrix.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defparameter *image-width* 200
-  "The width of the image cell matrix, in cells.")
-
-(defparameter *image-height* 200
-  "The height of the image cell matrix, in cells.")
-
-(defstruct cell
-  "An image matrix cell."
-  (status nil)
-  (figure nil))
-
-(defparameter *statuses* '(nil rough figure-outline unused-inside-figure)
-  "The statuses each cell can have. nil is ground.")
-
-(defparameter *image-cells* (make-array (list *image-width* *image-height*))
-  "The image cell matrix. Row major.")
-
-(defun set-cell (x y value)
-  "Set cell x,y of the image cells matrix to value."
-  (assert (>= x 0))
-  (assert (< x *image-width*))
-  (assert (>= y 0))
-  (assert (< y *image-height*))
-  (setf (aref *image-cells*
-              x y)
-        value))
-
-(defun get-cell (x y)
-  "Get the value of cell x,y in the image cells matrix. "
-  (assert (>= x 0))
-  (assert (<= x *image-width*))
-  (assert (>= y 0))
-  (assert (< y *image-height*))
-  (aref *image-cells*
-        x y))
-
-(defun set-cell-status (x y status)
-  "Set the cell's status."
-  (assert (>= x 0))
-  (assert (< x *image-width*))
-  (assert (>= y 0))
-  (assert (< y *image-height*))
-  (setf (cell-status (get-cell x y)) status))
-
-(defun get-cell-status (x y)
-  "Set the cell's status."
-  (assert (>= x 0))
-  (assert (< x *image-width*))
-  (assert (>= y 0))
-  (assert (< y *image-height*))
-  (cell-status (get-cell x y)))
-
-(defun apply-line-cells (x0 y0 x1 y1 fun)
-  "Bresenham's algorithm. Always applies left to right."
-  (assert (>= x0 0))
-  (assert (< x0 *image-width*))
-  (assert (>= y0 0))
-  (assert (< y0 *image-height*))
-  (assert (>= x1 0))
-  (assert (< x1 *image-width*))
-  (assert (>= y1 0))
-  (assert (< y1 *image-height*))
-  (let ((steep (> (abs (- y1 y0)) (abs (- x1 x0)))))
-    (when steep
-      (rotatef x0 y0)
-      (rotatef x1 y1))
-    (when (> x0 x1)
-      (rotatef x0 x1)
-      (rotatef y0 y1))
-    (let* ((deltax (- x1 x0))
-           (deltay (abs (- y1 y0)))
-           (err (- (/ (+ deltax 1) 2)))
-           (ystep (if (< y0 y1) 1 -1))
-           (y y0))
-      (loop for x from x0 to x1 ;; Below?
-         do (progn
-              (if steep
-                  (funcall fun y x)
-                  (funcall fun x y))
-              (setf err (+ err deltay))
-              (when (>= err 0)
-                (setf y (+ y ystep))
-                (setf err (- err deltax))))))))
-
-(defun apply-rect-cells (x y width height fun)
-  "Applies the function to each cell of each row of the area top-to-bottom."
-  (assert (>= x 0))
-  (assert (<= x *image-width*))
-  (assert (>= y 0))
-  (assert (<= y *image-height*))
-  (assert (>= (+ x width) 0))
-  (assert (<= (+ x width) *image-width*))
-  (assert (>= (+ y height) 0))
-  (assert (<= (+ y height) *image-height*))
-  (dotimes (j height)
-    (dotimes (i width)
-      (funcall fun
-              (+ x i)
-              (+ y j)))))
-
-(defun initialise-cell-matrix ()
-  "Initialize the cell matrix."
-  (apply-rect-cells 0 0 *image-width* *image-height*
-                    (lambda (x y) (set-cell x y (make-cell)))))
-
-(defun write-cell-matrix-ppm-file (&optional (filename "./cells.ppm")
-                                             (comment ""))
-  "Write the cell matrix to a colour, binary ppm file."
-  ;; Write the header in character stream mode
-  (with-open-file (stream filename
-                          :direction :output
-                          :if-exists :supersede)
-    (format stream "P6~%#~A~%~D ~D~%~d~%"
-            comment *image-width* *image-height* 255))
-  ;; Append the rasters in byte stream mode
-  (with-open-file (stream filename
-                          :direction :output
-                          :if-exists :append
-                          :element-type '(unsigned-byte 8))
-    (dotimes (j *image-height*)
-      (dotimes (i *image-width*)
-        (case (get-cell-status i (- *image-height* j 1))
-          (figure-outline (write-byte 0 stream)
-                          (write-byte 0 stream)
-                          (write-byte 0 stream))
-          (unused-inside-figure (write-byte 0 stream)
-                                (write-byte 255 stream)
-                                (write-byte 0 stream))
-          (rough (write-byte 255 stream)
-                 (write-byte 0 stream)
-                 (write-byte 0 stream))
-          (t (write-byte 255 stream)
-             (write-byte 255 stream)
-             (write-byte 255 stream)))))
-    (namestring stream)))
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Line Drawing.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Line Drawing.
 
 (defvar pen-position)
 (defvar pen-direction)
-(defparameter pen-move-distance 1.0)
+(defparameter pen-move-distance 2.0)
 
 (defvar line-start)
 (defvar line-end)
@@ -317,15 +75,15 @@
 (defun end-of-sub-phase ()
   (>= sub-phase-length-so-far sub-phase-length))
 
-(defparameter min-sub-phase-length 5.0)
-(defparameter max-sub-phase-length 100.0)
+(defparameter min-sub-phase-length 50.0)
+(defparameter max-sub-phase-length 256.0)
 
 (defun set-length-of-sub-phase ()
   (setf sub-phase-length-so-far 0)
-  (setf sub-phase-length (random-range (max min-sub-phase-length
-                                            (/ line-distance 10.0))
+  (setf sub-phase-length (random-range (min min-sub-phase-length
+                                            line-distance)
                                        (min max-sub-phase-length
-                                            (/ line-distance 5.0)))))
+                                            line-distance))))
 
 (defparameter min-angular-limit (/ pi 8))
 (defparameter max-angular-limit (/ pi 4))
@@ -363,13 +121,6 @@
     (t (random-range min-swing-rate-change
                      max-swing-rate-change))))
 
-(defun corrective-swing-rate-change ()
-  "Set the amount the swing rate will increase or decrease by each step."
-  (case swing-kind
-    (constant 0)
-    (t (random-range min-swing-rate-change
-                     max-swing-rate-change))))
-
 (defun set-swing-straight-ahead ()
   "When the swing state is straight ahead, swing rate and change rate are 0."
   (setf swing-rate 0.0)
@@ -380,37 +131,12 @@
   (setf swing-rate (random-range min-swing-rate max-swing-rate))
   (setf swing-rate-change (random-swing-rate-change)))
 
-(defun random-rate-of-swing ()
-  "Choose random values for the swing based on its direction."
-  (if (eq swing-direction 'straight-ahead)
-      (set-swing-straight-ahead)
-      (set-swing-amount)))
-
-(defun set-swing-amount-corrective ()
-  "Set the swing and change rate to correct from exceeding the angular limit."
-  (let ((min-corrective-swing  (- (abs (pen-direction-relative-to-line))
-                                  angular-limit)))
-    (if (< min-corrective-swing max-swing-rate)
-        (setf swing-rate (random-range min-corrective-swing
-                                   max-swing-rate))
-        ;; Something has gone horribly wrong, probably due to homing
-        (progn
-          (format t "Corrective turn exceeds maximum turn rate, probably due to homing.~%")
-          (setf swing-rate min-corrective-swing)))
-    (setf swing-rate-change (corrective-swing-rate-change))))
-
-(defun corrective-rate-of-swing ()
-  "Choose values for the swing to correct from exceeding the angular limit."
-  (if (eq swing-direction 'straight-ahead)
-      (break "corrective-weight-of-swing with swing-direction straight-ahead")
-      (set-swing-amount-corrective)))
-
 (defun set-rate-of-swing ()
   "Set values for the swing depending on whether we are within angular limit."
   (set-swing-kind)
-  (if (within-angular-limits)
-      (random-rate-of-swing)
-      (corrective-rate-of-swing)))
+   (if (eq swing-direction 'straight-ahead)
+      (set-swing-straight-ahead)
+      (set-swing-amount)))
 
 (defun update-swing-rate ()
   "Update the swing rate, constraining the result to 0..max-swing-rate."
@@ -448,10 +174,9 @@
                        pen-direction (point-x line-end) (point-y line-end)))
 
 (defun weight-curve (time)
-  "For time from 0..1 , increase more rapidly as time approaches 1.0 ."
+  "For time from 0..1 ."
   (assert (<= 0.0 time 1.0))
-  (* (sigmoid (+ -8 (* time 8)))
-     2.0))
+  time)
 
 (defun weight-from-distance ()
   "How close to the direction to the end point the pen should be now."
@@ -469,7 +194,7 @@
 ;; fits the description.
 
 (defun correction-for-homing ()
-     ;;  (format t "~a ~a ~a ~%" pen-direction (weight-from-distance) (direction-difference))
+  ;;(format t "~a ~a ~a ~%" pen-direction (weight-from-distance) (direction-difference))
   (assert (< (direction-difference) 2.0))
   (setf pen-direction (+ pen-direction (weighted-correction))))
 
@@ -501,41 +226,51 @@
   (setf pen-position line-start)
   (setf pen-direction line-direction))
 
-(defvar panic-count)
+(defun new-sub-phase ()
+  (set-length-of-sub-phase)
+  (if (= sub-phase-count 0)
+      (progn
+        (set-swing-left-or-right)
+        (set-rate-of-swing))
+      (reverse-swing))
+  ;;                 (format t "Subphase: length ~a direction ~a swing ~a change ~a~%" sub-phase-length swing-direction swing-rate swing-rate-change)
+  (incf sub-phase-count))
+
+(defun new-phase ()
+  "Start a new phase ."
+  (format t "NEW PHASE~%")
+  (setf sub-phase-count 0))
+
+(defun new-phase-outside-angular-limits ()
+  (format t "Exceeded angular limit.~%")
+  (let ((direction swing-direction))
+    (new-phase)
+    (new-sub-phase)
+    (setf swing-direction direction)
+    (reverse-swing)))
+
+(defun draw-line-step ()
+  (calculate-new-direction-for-line)
+  (correction-for-homing)
+  (calculate-position-of-next-point)
+  (move-to-next-point))
 
 (defun draw-line (from to)
-  (apply-line-cells (point-x from) (point-y from)
-                    (point-x to) (point-y to)
+  (apply-line-cells (point-x from) (point-y from) (point-x to) (point-y to)
                     (lambda (x y)
                       (set-cell-status x y 'unused-inside-figure)))
   (set-line-drawing-parameters from to)
-  (loop named stop
-     do  (loop
-            ;;      initially (format t "NEW PHASE~%")
-            initially (set-swing-left-or-right)
-            initially (setf panic-count 0)
-            do (progn
-                 (set-length-of-sub-phase)
-                 (set-rate-of-swing)
-                      ;;                 (format t "Subphase: length ~a direction ~a swing ~a change ~a~%" sub-phase-length swing-direction swing-rate swing-rate-change)
-                 (loop
-                    do (progn
-                         (calculate-new-direction-for-line)
-                         (when (not (within-angular-limits))
-                                ;;                         (format t "panic: pen ~a limit ~a correction ~a~%" pen-direction angular-limit (weighted-correction))
-                           (incf panic-count)
-                           (when (> panic-count 20)
-                             (break))
-                           (setf sub-phase-count 0) ;; Start new phase
-                           (loop-finish)) ;; This will still evaluate finally
-                         (correction-for-homing)
-                         (calculate-position-of-next-point)
-                         (move-to-next-point)
-                         (when (reached-destination)
-                           (return-from stop)))
-                    until (end-of-sub-phase)
-                    finally (reverse-swing)))
-            until (end-of-phase))))
+  (loop
+        do (loop
+             initially (new-phase)
+             do (loop
+                  initially (new-sub-phase)
+                  when (not (within-angular-limits))
+                    do (new-phase-outside-angular-limits)
+                  do (draw-line-step)
+                  until (or (end-of-sub-phase) (reached-destination)))
+             until (or (end-of-phase) (reached-destination)))
+        until (reached-destination)))
 
 (defun test-draw-line ()
   (initialise-cell-matrix)
