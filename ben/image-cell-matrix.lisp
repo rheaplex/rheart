@@ -1,7 +1,7 @@
-(defparameter *image-width* 200
+(defparameter *image-width* 1024
   "The width of the image cell matrix, in cells.")
 
-(defparameter *image-height* 200
+(defparameter *image-height* 768
   "The height of the image cell matrix, in cells.")
 
 (defstruct cell
@@ -99,10 +99,28 @@
               (+ x i)
               (+ y j)))))
 
+(defun clear-ground-p (x y width height)
+  "Is the rectangular space clear of figure or rough cells?"
+  (let ((clear t))
+    (block clear-block
+      (apply-rect-cells x y (1+ width) (1+ height)
+                        (lambda (h v)
+                          (when (not (eq (cell-status (get-cell h v)) nil))
+                            (setf clear nil)
+                            (return-from clear-block)))))
+      clear))
+
 (defun initialise-cell-matrix ()
   "Initialize the cell matrix."
   (apply-rect-cells 0 0 *image-width* *image-height*
                     (lambda (x y) (set-cell x y (make-cell)))))
+
+(defun roughen (&optional (count 10))
+  "Set some cells to be unusable for drawing."
+  (dotimes (i count)
+    (setf (cell-status (get-cell (random  *image-width*)
+                                 (random  *image-height*)) )
+          'rough)))
 
 (defun write-cell-matrix-ppm-file (&optional (filename "./cells.ppm")
                                              (comment ""))

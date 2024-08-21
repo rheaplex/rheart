@@ -28,7 +28,7 @@
         (+ (randint range) min))))
 
 (defun random-range (min max)
-  "Return an integer from min to max, exclusive."
+  "Return a float from min to max, exclusive."
   ;;FIXME:!!!!
   (if (= min max)
       min

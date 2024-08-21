@@ -1,3 +1,9 @@
+(load "random")
+(load "geometry")
+(load "image-cell-matrix")
+(load "figure")
+(load "production-system")
+;;(load "on-purpose-line")
 (load "ben")
 
 (defun main ()
